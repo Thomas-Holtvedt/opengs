@@ -17,8 +17,13 @@ func _init(province_image: Image) -> void:
 			and FileAccess.file_exists(_cache_path("border_texture.png")) \
 			and FileAccess.file_exists(_cache_path("province_color_to_lookup.data")):
 		print("Loading Map from cache - Start")
-		lookup_texture = ImageTexture.create_from_image(Image.load_from_file(_cache_path("lookup_texture.png")))
-		border_texture = ImageTexture.create_from_image(Image.load_from_file(_cache_path("border_texture.png")))
+		var lookup_image := Image.load_from_file(_cache_path("lookup_texture.png"))
+		lookup_image.convert(Image.FORMAT_RG8) # Memory optimization
+		lookup_texture = ImageTexture.create_from_image(lookup_image)
+
+		var border_image := Image.load_from_file(_cache_path("border_texture.png"))
+		border_image.convert(Image.FORMAT_L8) # Memory optimization
+		border_texture = ImageTexture.create_from_image(border_image)
 		var f = FileAccess.open(_cache_path("province_color_to_lookup.data"), FileAccess.READ)
 		province_color_to_lookup = str_to_var(f.get_as_text())
 		f.close()
@@ -32,16 +37,18 @@ func _generate(province_image: Image) -> void:
 	var width: int = province_image.get_width()
 	var height: int = province_image.get_height()
 	var src_data: PackedByteArray = province_image.get_data()
+	@warning_ignore("integer_division")
 	var bpp: int = src_data.size() / (width * height)
 	var src_stride: int = width * bpp
 
-	var out_size: int = width * height * 3
-	var out_stride: int = width * 3
+	var lut_size: int = width * height * 2
+	var lut_stride: int = width * 2
+	var border_size: int = width * height
 
 	var lut_data: PackedByteArray = PackedByteArray()
-	lut_data.resize(out_size)
+	lut_data.resize(lut_size)
 	var border_data: PackedByteArray = PackedByteArray()
-	border_data.resize(out_size)
+	border_data.resize(border_size)
 
 	var color_key_to_lookup: Dictionary[int, Vector2i] = {}
 	var color_map_r: int = 0
@@ -50,7 +57,8 @@ func _generate(province_image: Image) -> void:
 	for y in range(height):
 		for x in range(width):
 			var src_idx: int = y * src_stride + x * bpp
-			var out_idx: int = y * out_stride + x * 3
+			var lut_idx: int = y * lut_stride + x * 2
+			var border_idx: int = y * width + x
 			var r: int = src_data[src_idx]
 			var g: int = src_data[src_idx + 1]
 			var b: int = src_data[src_idx + 2]
@@ -66,9 +74,8 @@ func _generate(province_image: Image) -> void:
 					color_map_g += 1
 
 			var lookup: Vector2i = color_key_to_lookup[key]
-			lut_data[out_idx] = lookup.x
-			lut_data[out_idx + 1] = lookup.y
-			lut_data[out_idx + 2] = 0
+			lut_data[lut_idx] = lookup.x
+			lut_data[lut_idx + 1] = lookup.y
 
 			# --- Border texture ---
 			var is_border: bool = false
@@ -90,18 +97,14 @@ func _generate(province_image: Image) -> void:
 					is_border = true
 
 			if is_border:
-				border_data[out_idx] = 0
-				border_data[out_idx + 1] = 0
-				border_data[out_idx + 2] = 0
+				border_data[border_idx] = 0
 			else:
-				border_data[out_idx] = 255
-				border_data[out_idx + 1] = 255
-				border_data[out_idx + 2] = 255
+				border_data[border_idx] = 255
 	DirAccess.make_dir_recursive_absolute("user://map_cache/" + cache_id)
-	var lut_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RGB8, lut_data)
+	var lut_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RG8, lut_data)
 	lookup_texture = ImageTexture.create_from_image(lut_image)
 	lut_image.save_png(_cache_path("lookup_texture.png"))
-	var border_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RGB8, border_data)
+	var border_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_L8, border_data)
 	border_texture = ImageTexture.create_from_image(border_image)
 	border_image.save_png(_cache_path("border_texture.png"))
 	var f := FileAccess.open(_cache_path("province_color_to_lookup.data"), FileAccess.WRITE)

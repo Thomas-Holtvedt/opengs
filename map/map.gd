@@ -21,10 +21,15 @@ func _ready() -> void:
 	create_map_textures()
 
 
-func get_pixel_color(mouse_pos: Vector2) -> Color:
-	var offset_x  = int(province_image.get_width()/2.0)
-	var offset_y  = int(province_image.get_height()/2.0)
-	return province_image.get_pixel(int(mouse_pos.x * 10) + offset_x, int(mouse_pos.y * 10) + offset_y)
+func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
+	@warning_ignore("integer_division")
+	var offset_x = int(tex_gen.lookup_texture.get_width()/2)
+	@warning_ignore("integer_division")
+	var offset_y = int(tex_gen.lookup_texture.get_height()/2)
+	return tex_gen.lookup_texture.get_image().get_pixel(
+		int(mouse_pos.x * 10) + offset_x,
+		int(mouse_pos.y * 10) + offset_y,
+	)
 
 func create_map_textures() -> void:
 	tex_gen = MapTextureGenerator.new(province_image)
@@ -32,6 +37,10 @@ func create_map_textures() -> void:
 	map_material_2d.set_shader_parameter("province_border_image", tex_gen.border_texture)
 	tex_gen.lookup_texture.get_image().save_png("res://map/map_data/lut_preview.png") # remove in PROD, just for visuals in editor
 	tex_gen.border_texture.get_image().save_png("res://map/map_data/bt_preview.png") # remove in PROD, just for visuals in editor
+
+	# Set Sprite2D texture to lookup_texture
+	# It has the same size => less memory usage => the shader overrides the displayed content anyway
+	$MeshInstance3D/SubViewport/Sprite2D.texture = tex_gen.lookup_texture
 
 func create_map_modes(db: Database) -> void:
 	mm_political = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)
