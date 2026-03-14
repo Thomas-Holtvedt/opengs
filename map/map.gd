@@ -1,6 +1,6 @@
 extends StaticBody3D
 
-@onready var province_image: Image = $MeshInstance3D/SubViewport/Sprite2D.texture.get_image()
+@onready var map_sprite: Sprite2D = $MeshInstance3D/SubViewport/Sprite2D
 @onready var map_material_2d: ShaderMaterial = $MeshInstance3D/SubViewport/Sprite2D.material
 
 var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
@@ -18,7 +18,19 @@ var all_map_modes: Array[MapMode]
 
 
 func _ready() -> void:
-	create_map_textures()
+	await create_map_textures()
+
+
+func _wait_for_province_image(max_frames: int = 120) -> Image:
+	for _i in max_frames:
+		var tex: Texture2D = map_sprite.texture
+		if tex != null:
+			var image := tex.get_image()
+			if image != null:
+				return image
+		await get_tree().process_frame
+	push_warning("Map texture was not ready after waiting %d frames." % max_frames)
+	return null
 
 
 func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
@@ -32,6 +44,11 @@ func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
 	)
 
 func create_map_textures() -> void:
+	var province_image := await _wait_for_province_image()
+	if province_image == null:
+		push_error("Cannot create map textures: province image is not available.")
+		return
+
 	tex_gen = MapTextureGenerator.new(province_image)
 	map_material_2d.set_shader_parameter("lookup_image", tex_gen.lookup_texture)
 	map_material_2d.set_shader_parameter("province_border_image", tex_gen.border_texture)
@@ -40,7 +57,7 @@ func create_map_textures() -> void:
 
 	# Set Sprite2D texture to lookup_texture
 	# It has the same size => less memory usage => the shader overrides the displayed content anyway
-	$MeshInstance3D/SubViewport/Sprite2D.texture = tex_gen.lookup_texture
+	map_sprite.texture = tex_gen.lookup_texture
 
 func create_map_modes(db: Database) -> void:
 	mm_political = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)
