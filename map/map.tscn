@@ -1,18 +1,18 @@
 [gd_scene format=3 uid="uid://bw5bx75nyr0ua"]
 
 [ext_resource type="Script" uid="uid://c7aii77k7h0xg" path="res://map/map.gd" id="1_a0dt8"]
-[ext_resource type="Texture2D" uid="uid://b2g6um55ov066" path="res://map/map_data/provinces.png" id="1_hgrid"]
+[ext_resource type="Texture2D" uid="uid://x7dc1e3ur1rp" path="res://map/map_data/provinces.png" id="1_hgrid"]
 [ext_resource type="Shader" uid="uid://etl1fouj3y0j" path="res://map/map_shaders/map3d.gdshader" id="2_4hjbm"]
 [ext_resource type="Material" uid="uid://b62uxcw6bw4d6" path="res://map/map_shaders/map2D.tres" id="3_lgq1i"]
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_4hjbm"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_lgq1i"]
 viewport_path = NodePath("MeshInstance3D/SubViewport")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_lgq1i"]
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("2_4hjbm")
-shader_parameter/subview_image = SubResource("ViewportTexture_4hjbm")
+shader_parameter/subview_image = SubResource("ViewportTexture_lgq1i")
 shader_parameter/threshold = 0.1
 shader_parameter/aa_scale = 17.6
 shader_parameter/base_line_thickness = 0.38197
@@ -20,20 +20,19 @@ shader_parameter/base_line_thickness = 0.38197
 [sub_resource type="PlaneMesh" id="PlaneMesh_hgrid"]
 resource_local_to_scene = true
 material = SubResource("ShaderMaterial_lgq1i")
-size = Vector2(982.1, 634.7)
+size = Vector2(701.5, 496)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_hgrid"]
-size = Vector3(982.1, 1, 634.7)
+size = Vector3(701.5, 0.01, 496)
 
 [node name="Map" type="StaticBody3D" unique_id=1988879255]
 script = ExtResource("1_a0dt8")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=117193191]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1324234, 0.00022888184, -0.31709862)
 mesh = SubResource("PlaneMesh_hgrid")
 
 [node name="SubViewport" type="SubViewport" parent="MeshInstance3D" unique_id=466323107]
-size = Vector2i(9821, 6347)
+size = Vector2i(7015, 4960)
 
 [node name="Sprite2D" type="Sprite2D" parent="MeshInstance3D/SubViewport" unique_id=1010738619]
 material = ExtResource("3_lgq1i")

@@ -2,7 +2,6 @@ extends StaticBody3D
 
 @onready var map_sprite: Sprite2D = $MeshInstance3D/SubViewport/Sprite2D
 @onready var map_material_2d: ShaderMaterial = $MeshInstance3D/SubViewport/Sprite2D.material
-
 var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
 
 
@@ -60,10 +59,11 @@ func create_map_textures() -> void:
 	map_sprite.texture = tex_gen.lookup_texture
 
 func create_map_modes(db: Database) -> void:
-	mm_political = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)
-	mm_ideology = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.IDEOLOGY)
-	mm_province = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.PROVINCE)
-	mm_territory = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.TERRITORY)
+	var nlr := tex_gen.num_lookup_rows
+	mm_political = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL, nlr)
+	mm_ideology = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.IDEOLOGY, nlr)
+	mm_province = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.PROVINCE, nlr)
+	mm_territory = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.TERRITORY, nlr)
 	all_map_modes = [mm_political, mm_ideology, mm_province, mm_territory]
 	set_map_mode(MapMode.Type.POLITICAL)
 	mm_political.get_image().save_png("res://map/map_data/cmap_preview.png")

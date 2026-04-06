@@ -3,10 +3,12 @@ extends Resource
 class_name Province
 
 enum Type { LAND, LAKE, OCEAN }
+enum Terrain { FOREST, HILLS, MOUNTAIN, PLAINS, URBAN, JUNGLE, MARSH, DESERT, DEEP_OCEAN, SHALLOW_SEA, FJORDS, LAKES }
 
 var id: String
 var color: Color
 var type: Type
+var terrain: Terrain
 var center: Vector2
 var territory: Territory:
 	set(value):
@@ -23,8 +25,9 @@ var province_owner: Country:
 		province_owner.owned_provinces.append(self)
 var province_controller: Country
 
-func _init(province_id: String, province_color: Color, province_type: Type, province_center: Vector2) -> void:
+func _init(province_id: String, province_type: Type, province_color: Color,  province_center: Vector2, province_terrain: Terrain) -> void:
 	self.id = province_id
 	self.color = province_color
 	self.center = province_center
 	self.type = province_type
+	self.terrain = province_terrain

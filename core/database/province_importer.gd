@@ -9,9 +9,10 @@ func import_definition(db: Database) -> void:
 
 		var province = Province.new(
 			a[0],
-			Color(a[1].to_float()/255, a[2].to_float()/255, a[3].to_float()/255),
-			Province.Type[a[4].to_upper()],
-			Vector2(a[5].to_float(), a[6].to_float())
+			Province.Type[a[1].to_upper()],
+			Color(a[2].to_float()/255, a[3].to_float()/255, a[4].to_float()/255),
+			Vector2(a[5].to_float(), a[6].to_float()),
+			Province.Terrain[a[7].to_upper()]
 		)
 
 		db.id_to_province[province.id] = province

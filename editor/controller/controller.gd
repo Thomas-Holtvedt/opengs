@@ -13,11 +13,6 @@ signal province_selected
 @export var camera_can_rotate_by_keys := true
 @export var camera_can_automatic_pan := false
 
-@export_group("⚠️ Inspector Warning ⚠️")
-@export_multiline var inspector_warning_note := """\
-Remote/runtime Inspector edits of the properties below are temporary only.
-Edit the scene node and save to persist changes.\
-"""
 @export_category("Camera Move Settings")
 @export var camera_move_acceleration_speed_factor := Vector3(0.5, 0.5, 0.5)
 @export var camera_move_velocity_half_life := 0.15

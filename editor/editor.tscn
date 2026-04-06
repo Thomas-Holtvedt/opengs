@@ -29,7 +29,6 @@ transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545
 shadow_enabled = true
 
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1173172, -0.05265808, 0.16524506)
 
 [node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
 

@@ -38,7 +38,7 @@ func _on_province_editor_change_owner(province_owner: Country) -> void:
 
 func _on_province_editor_change_controller(controller: Country) -> void:
 	selected_province.province_controller = controller
-	$Map.update_map_modes(selected_province, selected_province.province_controller, MapMode.SECONDARY_OFFSET)
+	$Map.update_map_modes(selected_province, selected_province.province_controller, $Map.current_map_mode.secondary_offset)
 	$Map.update_map()
 
 
@@ -64,7 +64,7 @@ func _on_province_editor_change_type(index: int) -> void:
 func _on_province_editor_change_controller_territory(controller: Country) -> void:
 	for province: Province in selected_province.territory.provinces:
 		province.province_controller = controller
-		$Map.update_map_modes(province, controller, MapMode.SECONDARY_OFFSET)
+		$Map.update_map_modes(province, controller, $Map.current_map_mode.secondary_offset)
 	$Map.update_map()
 
 

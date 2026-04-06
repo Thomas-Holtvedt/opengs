@@ -4,6 +4,7 @@ class_name MapTextureGenerator
 var lookup_texture: ImageTexture
 var border_texture: ImageTexture
 var province_color_to_lookup: Dictionary[Color, Color]
+var num_lookup_rows: int
 var cache_id: String
 
 
@@ -27,6 +28,7 @@ func _init(province_image: Image) -> void:
 		var f = FileAccess.open(_cache_path("province_color_to_lookup.data"), FileAccess.READ)
 		province_color_to_lookup = str_to_var(f.get_as_text())
 		f.close()
+		num_lookup_rows = maxi(1, ceili(float(province_color_to_lookup.size()) / 256.0))
 		print("Loading Map from cache - End")
 	else:
 		print("Generating Map - Start")
@@ -100,6 +102,7 @@ func _generate(province_image: Image) -> void:
 				border_data[border_idx] = 0
 			else:
 				border_data[border_idx] = 255
+	num_lookup_rows = maxi(1, ceili(float(province_color_to_lookup.size()) / 256.0))
 	DirAccess.make_dir_recursive_absolute("user://map_cache/" + cache_id)
 	var lut_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RG8, lut_data)
 	lookup_texture = ImageTexture.create_from_image(lut_image)
