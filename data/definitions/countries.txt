@@ -8,3 +8,6 @@ DEU
 ITA
 ESP
 PRT
+NOR
+SWE
+DEN

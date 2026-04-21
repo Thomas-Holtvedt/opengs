@@ -5,6 +5,7 @@
 [ext_resource type="Shader" uid="uid://etl1fouj3y0j" path="res://map/map_shaders/map3d.gdshader" id="2_4hjbm"]
 [ext_resource type="Texture2D" uid="uid://btohywta6o34d" path="res://map/map_data/normal.png" id="3_kffv2"]
 [ext_resource type="Material" uid="uid://b62uxcw6bw4d6" path="res://map/map_shaders/map2D.tres" id="3_lgq1i"]
+[ext_resource type="Texture2D" uid="uid://2b5yoee04da7" path="res://map/map_data/terrain_bm.png" id="4_7lyie"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_lgq1i"]
 viewport_path = NodePath("MeshInstance3D/SubViewport")
@@ -13,11 +14,12 @@ viewport_path = NodePath("MeshInstance3D/SubViewport")
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("2_4hjbm")
+shader_parameter/terrain_image = ExtResource("4_7lyie")
 shader_parameter/subview_image = SubResource("ViewportTexture_lgq1i")
 shader_parameter/normalmap_image = ExtResource("3_kffv2")
-shader_parameter/threshold = 0.01
-shader_parameter/aa_scale = 17.6
-shader_parameter/base_line_thickness = 0.382
+shader_parameter/threshold = 0.001
+shader_parameter/aa_scale = 1000.0
+shader_parameter/base_line_thickness = 0.38197
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_hgrid"]
 resource_local_to_scene = true
@@ -31,7 +33,6 @@ size = Vector3(701.5, 0.01, 496)
 script = ExtResource("1_a0dt8")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=117193191]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2224731, 0.055633545, -0.4311142)
 mesh = SubResource("PlaneMesh_hgrid")
 
 [node name="SubViewport" type="SubViewport" parent="MeshInstance3D" unique_id=466323107]

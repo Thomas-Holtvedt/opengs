@@ -69,3 +69,10 @@ text = "Position"
 
 [node name="LabelPosition" type="Label" parent="PanelContainer/GridContainer" unique_id=1915011695]
 layout_mode = 2
+
+[node name="Label7" type="Label" parent="PanelContainer/GridContainer" unique_id=889182224]
+layout_mode = 2
+text = "Terrain Type"
+
+[node name="LabelTerrain" type="Label" parent="PanelContainer/GridContainer" unique_id=1814099509]
+layout_mode = 2

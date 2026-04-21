@@ -82,6 +82,13 @@ text = "Position"
 [node name="LabelPosition" type="Label" parent="PanelContainer/GridContainer" unique_id=968576644]
 layout_mode = 2
 
+[node name="LabelTerrain" type="Label" parent="PanelContainer/GridContainer" unique_id=906052535]
+layout_mode = 2
+text = "Terrain"
+
+[node name="OBProvinceTerrain" type="OptionButton" parent="PanelContainer/GridContainer" unique_id=1334201509]
+layout_mode = 2
+
 [node name="ButtonGenPRV" type="Button" parent="PanelContainer/GridContainer" unique_id=1900475102]
 layout_mode = 2
 text = "Generate Province History"
@@ -92,4 +99,5 @@ text = "Generate Province History"
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBTerritoryOwner" to="." method="_on_ob_territory_owner_item_selected"]
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBTerritoryController" to="." method="_on_ob_territory_controller_item_selected"]
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBTerritory" to="." method="_on_ob_territory_item_selected"]
+[connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceTerrain" to="." method="_on_ob_province_terrain_item_selected"]
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonGenPRV" to="." method="_on_button_gen_prv_button_up"]

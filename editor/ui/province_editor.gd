@@ -3,6 +3,7 @@ extends CanvasLayer
 @onready var province_id = $PanelContainer/GridContainer/LabelProvinceID
 @onready var province_color = $PanelContainer/GridContainer/ColorPickerProvinceColor
 @onready var province_type = $PanelContainer/GridContainer/OBProvinceType
+@onready var province_terrain = $PanelContainer/GridContainer/OBProvinceTerrain
 @onready var province_owner = $PanelContainer/GridContainer/OBProvinceOwner
 @onready var province_controller = $PanelContainer/GridContainer/OBProvinceController
 @onready var territory_owner = $PanelContainer/GridContainer/OBTerritoryOwner
@@ -12,6 +13,7 @@ extends CanvasLayer
 @onready var province_center = $PanelContainer/GridContainer/LabelPosition
 
 signal change_type(index: int)
+signal change_terrain(index: int)
 signal change_owner(new_owner: Country)
 signal change_controller(controller: Country)
 signal change_owner_territory(new_owner: Country)
@@ -30,6 +32,7 @@ var territory_id_list_rev: Dictionary[String, int]
 
 func populate_buttons() -> void:
 	populate_type_button()
+	populate_terrain_button()
 	populate_owner_button()
 	populate_territory_button() 
 
@@ -37,6 +40,7 @@ func update_labels(province: Province):
 	province_id.text  = str(province.id)
 	province_color.color = province.color
 	province_type.select(province.type)
+	province_terrain.select(province.terrain)
 	territory_owner.select(-1)
 	territory_controller.select(-1)
 	province_center.text = str(province.center)
@@ -64,6 +68,10 @@ func populate_type_button() -> void:
 	for type in Province.Type:
 		province_type.add_item(type)
 
+func populate_terrain_button() -> void:
+	for terrain in Province.Terrain:
+		province_terrain.add_item(terrain)
+
 func populate_owner_button() -> void:
 	var i: int = 0
 	for tag in database.tag_to_country:
@@ -84,6 +92,9 @@ func _on_ob_territory_item_selected(index: int) -> void:
 	
 func _on_ob_province_type_item_selected(index: int) -> void:
 	change_type.emit(index)
+	
+func _on_ob_province_terrain_item_selected(index: int) -> void:
+	change_terrain.emit(index)
 
 
 func _on_ob_province_owner_item_selected(index: int) -> void:

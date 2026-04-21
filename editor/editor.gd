@@ -5,23 +5,17 @@ var selected_province: Province
 
 func _ready() -> void:
 	DataImporter.new(db)
-
-	# Store compact lookup color table (switch keys and values)
-	db.lookup_to_color_province = {}
-	for k in $Map.tex_gen.province_color_to_lookup.keys():
-		var v = $Map.tex_gen.province_color_to_lookup[k]
-		db.lookup_to_color_province[v] = k
-	
+	$Map.create_map_textures(db)
 	$Map.create_map_modes(db)
 	$Map.create_country_labels(db)
+	$Map.get_preview_images()
 
 	$ProvinceEditor.database = db
 	$ProvinceEditor.populate_buttons()
 
 
 func _on_controller_province_selected(mouse_pos: Vector2) -> void:
-	var rg_color: Color = $Map.get_pixel_lookup_color(mouse_pos)
-	var selected_province_color: Color = db.lookup_to_color_province[rg_color]
+	var selected_province_color: Color = $Map.get_pixel_lookup_color(mouse_pos)
 	selected_province = db.color_to_province[selected_province_color]
 	$Map.highlight_province(selected_province)
 	$ProvinceEditor.update_labels(selected_province)
@@ -58,8 +52,10 @@ func _on_province_editor_change_owner_territory(province_owner: Country) -> void
 
 
 func _on_province_editor_change_type(index: int) -> void:
-	selected_province.type = index
+	selected_province.type = Province.Type.values()[index]
 
+func _on_province_editor_change_terrain(index: int) -> void:
+	selected_province.terrain = Province.Terrain.values()[index]
 
 func _on_province_editor_change_controller_territory(controller: Country) -> void:
 	for province: Province in selected_province.territory.provinces:

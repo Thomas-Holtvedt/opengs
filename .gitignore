@@ -401,3 +401,7 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 *.generated.props
+tools/QGIS/natural earth 2.tif
+tools/QGIS/blue marble.tif
+tools/QGIS/world.topo.bathy.200406.3x21600x10800_geo.tif
+tools/QGIS/NE2_HR_LC_SR_W_DR.zip
