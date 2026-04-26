@@ -47,8 +47,6 @@ func _on_province_editor_change_owner_territory(province_owner: Country) -> void
 	$Map.update_country_label(province_owner)
 	for old_owner: Country in old_owner_list:
 		$Map.update_country_label(old_owner)
-	
-	
 
 
 func _on_province_editor_change_type(index: int) -> void:
@@ -72,3 +70,7 @@ func _on_province_editor_export_requested() -> void:
 
 func _on_province_editor_change_territory(new_territory: Territory) -> void:
 	selected_province.territory = new_territory
+
+
+func _on_map_modes_map_mode_selected(mode: MapMode.Type) -> void:
+	$Map.set_map_mode(mode)

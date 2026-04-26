@@ -6,25 +6,23 @@ extends StaticBody3D
 var current_map_mode: MapMode
 var current_highlight: MapHighlight
 var all_map_modes: Dictionary[int, MapMode]
+var province_image: Image
+var province_image_offset: Vector2i
 
 
 func create_map_textures(db: Database) -> void:
-	var province_image: Image = map_sprite.texture.get_image()
-	var tex_gen: MapTextureGenerator = MapTextureGenerator.new(province_image, db)
-	
-	map_material_2d.set_shader_parameter("lookup_image", tex_gen.lookup_texture)
-	map_material_2d.set_shader_parameter("province_border_image", tex_gen.border_texture)
-	
+	province_image = map_sprite.texture.get_image()
+	@warning_ignore("integer_division")
+	province_image_offset = Vector2i(province_image.get_width() / 2, province_image.get_height() / 2)
+	var tex_gen: MapTextureGenerator = MapTextureGenerator.new(province_image)
+	tex_gen.create_map_textures(province_image, db)
+	tex_gen.set_map_textures(map_material_2d)
 
 
 func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
-	@warning_ignore("integer_division")
-	var offset_x: int = roundi(map_sprite.texture.get_image().get_width()/2)
-	@warning_ignore("integer_division")
-	var offset_y: int = roundi(map_sprite.texture.get_image().get_height()/2)
-	return map_sprite.texture.get_image().get_pixel(
-		int(mouse_pos.x * 10) + offset_x,
-		int(mouse_pos.y * 10) + offset_y,
+	return province_image.get_pixel(
+		int(mouse_pos.x * 10) + province_image_offset.x,
+		int(mouse_pos.y * 10) + province_image_offset.y,
 	)
 
 
@@ -65,6 +63,7 @@ func set_map_mode(map_mode: MapMode.Type) -> void:
 func update_map_modes(province: Province, country: Country, offset: int) -> void:
 	for mm in all_map_modes.values():
 		mm.update_color_map(province.color, country.map_color, offset)
+		mm.commit()
 
 
 func highlight_province(province: Province):
@@ -78,4 +77,5 @@ func highlight_province(province: Province):
 func get_preview_images(): # remove in PROD, just for visuals in editor
 	map_material_2d.get_shader_parameter("lookup_image").get_image().save_png("res://map/map_data/lut_preview.png") 
 	map_material_2d.get_shader_parameter("province_border_image").get_image().save_png("res://map/map_data/bt_preview.png")
+	map_material_2d.get_shader_parameter("territory_border_image").get_image().save_png("res://map/map_data/tbt_preview.png")
 	current_map_mode.get_image().save_png("res://map/map_data/cmap_preview.png")

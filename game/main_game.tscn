@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://h51uhrlkk2y" path="res://game/main_game.gd" id="1_3fham"]
 [ext_resource type="PackedScene" uid="uid://bw5bx75nyr0ua" path="res://map/map.tscn" id="2_7of5j"]
 [ext_resource type="PackedScene" uid="uid://c8ptbx1watnwc" path="res://game/player/player.tscn" id="3_g4axw"]
-[ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://game/ui/map_modes.tscn" id="4_t4f2l"]
+[ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="4_t4f2l"]
 [ext_resource type="PackedScene" uid="uid://5arm34pep1aj" path="res://game/ui/province_selected.tscn" id="5_433cb"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_g4axw"]

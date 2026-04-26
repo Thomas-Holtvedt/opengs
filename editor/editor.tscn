@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://bw5bx75nyr0ua" path="res://map/map.tscn" id="2_fjngd"]
 [ext_resource type="PackedScene" uid="uid://c3qoli5ipe8qr" path="res://editor/controller/controller.tscn" id="3_er7c6"]
 [ext_resource type="PackedScene" uid="uid://fhm3x6nwgara" path="res://editor/ui/province_editor.tscn" id="4_j82do"]
+[ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="5_6j37k"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_er7c6"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -34,6 +35,8 @@ shadow_enabled = true
 
 [node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
 
+[node name="MapModes" parent="." unique_id=206583246 instance=ExtResource("5_6j37k")]
+
 [connection signal="province_selected" from="Controller" to="." method="_on_controller_province_selected"]
 [connection signal="change_controller" from="ProvinceEditor" to="." method="_on_province_editor_change_controller"]
 [connection signal="change_controller_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_controller_territory"]
@@ -43,3 +46,4 @@ shadow_enabled = true
 [connection signal="change_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_territory"]
 [connection signal="change_type" from="ProvinceEditor" to="." method="_on_province_editor_change_type"]
 [connection signal="export_requested" from="ProvinceEditor" to="." method="_on_province_editor_export_requested"]
+[connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]

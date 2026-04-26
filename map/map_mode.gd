@@ -19,7 +19,6 @@ func _init(province_color_to_lookup: Dictionary[Color, Color], color_to_province
 	self.set_image(color_map)
 
 
-
 func _create_color_map(province_color_to_lookup: Dictionary[Color, Color], color_to_province, type, num_lookup_rows: int) -> Image:
 	var _color_map: Image = Image.create(256, 3 * num_lookup_rows, false, Image.FORMAT_RGB8)
 	for province_color: Color in province_color_to_lookup:
@@ -52,6 +51,7 @@ func _create_color_map(province_color_to_lookup: Dictionary[Color, Color], color
 						_color_map.set_pixel(x, y + secondary_offset, _terrain_color(province.terrain))
 	return _color_map
 
+
 func _ideology_color(ideology: Country.Ideology) -> Color:
 	match ideology:
 		Country.Ideology.DEMOCRACY:
@@ -59,7 +59,8 @@ func _ideology_color(ideology: Country.Ideology) -> Color:
 		Country.Ideology.COMMUNISM:
 			return Color.RED
 	return Color.BLACK
-	
+
+
 func _terrain_color(terrain: Province.Terrain) -> Color:
 	match terrain:
 		Province.Terrain.FOREST:
@@ -89,10 +90,22 @@ func _terrain_color(terrain: Province.Terrain) -> Color:
 	return Color.BLACK
 
 
+#func update_color_map(input_color: Color, output_color: Color, offset: int) -> void:
+	#var lookup: Color = _province_color_to_lookup.get(input_color, null)
+	#if lookup:
+		#var x: int = roundi(lookup.r * 255)
+		#var y: int = roundi(lookup.g * 255)
+		#color_map.set_pixel(x, y + offset, output_color)
+		#self.set_image(color_map)
+
+
 func update_color_map(input_color: Color, output_color: Color, offset: int) -> void:
 	var lookup: Color = _province_color_to_lookup.get(input_color, null)
 	if lookup:
 		var x: int = roundi(lookup.r * 255)
 		var y: int = roundi(lookup.g * 255)
 		color_map.set_pixel(x, y + offset, output_color)
-		self.set_image(color_map)
+
+
+func commit() -> void:
+	self.set_image(color_map)

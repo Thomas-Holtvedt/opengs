@@ -16,15 +16,31 @@ func _init(province: Province) -> void:
 			highlighted_territory.append(t_province.color)
 
 
+#func apply_highlights(mm: MapMode) -> MapMode:
+	#for color: Color in highlighted_territory:
+		#mm.update_color_map(color, territory_hl, mm.highlight_offset)
+		#mm.update_color_map(highlighted_province, province_hl, mm.highlight_offset)
+	#return mm
+#
+#
+#func remove_highlights(mm: MapMode) -> MapMode:
+	#for color: Color in highlighted_territory:
+		#mm.update_color_map(color, null_hl, mm.highlight_offset)
+		#mm.update_color_map(highlighted_province, null_hl, mm.highlight_offset)
+	#return mm
+
+
 func apply_highlights(mm: MapMode) -> MapMode:
 	for color: Color in highlighted_territory:
 		mm.update_color_map(color, territory_hl, mm.highlight_offset)
-		mm.update_color_map(highlighted_province, province_hl, mm.highlight_offset)
+	mm.update_color_map(highlighted_province, province_hl, mm.highlight_offset)
+	mm.commit()
 	return mm
 
 
 func remove_highlights(mm: MapMode) -> MapMode:
 	for color: Color in highlighted_territory:
 		mm.update_color_map(color, null_hl, mm.highlight_offset)
-		mm.update_color_map(highlighted_province, null_hl, mm.highlight_offset)
+	mm.update_color_map(highlighted_province, null_hl, mm.highlight_offset)
+	mm.commit()
 	return mm

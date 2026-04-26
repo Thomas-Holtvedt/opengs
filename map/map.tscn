@@ -7,6 +7,20 @@
 [ext_resource type="Material" uid="uid://b62uxcw6bw4d6" path="res://map/map_shaders/map2D.tres" id="3_lgq1i"]
 [ext_resource type="Texture2D" uid="uid://2b5yoee04da7" path="res://map/map_data/terrain_bm.png" id="4_7lyie"]
 
+[sub_resource type="ViewportTexture" id="ViewportTexture_7lyie"]
+viewport_path = NodePath("MeshInstance3D/SubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_5jdw0"]
+resource_local_to_scene = true
+render_priority = 0
+shader = ExtResource("2_4hjbm")
+shader_parameter/terrain_image = ExtResource("4_7lyie")
+shader_parameter/subview_image = SubResource("ViewportTexture_7lyie")
+shader_parameter/normalmap_image = ExtResource("3_kffv2")
+shader_parameter/threshold = 0.1
+shader_parameter/aa_scale = 17.6
+shader_parameter/base_line_thickness = 0.38197
+
 [sub_resource type="ViewportTexture" id="ViewportTexture_lgq1i"]
 viewport_path = NodePath("MeshInstance3D/SubViewport")
 
@@ -31,6 +45,15 @@ size = Vector3(701.5, 0.01, 496)
 
 [node name="Map" type="StaticBody3D" unique_id=1988879255]
 script = ExtResource("1_a0dt8")
+
+[node name="Sprite3D" type="Sprite3D" parent="." unique_id=919487762]
+transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0)
+visible = false
+material_override = SubResource("ShaderMaterial_5jdw0")
+pixel_size = 0.1
+axis = 1
+double_sided = false
+texture = ExtResource("4_7lyie")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=117193191]
 mesh = SubResource("PlaneMesh_hgrid")
