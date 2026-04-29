@@ -9,6 +9,7 @@ uniform sampler2D normalmap_image: hint_normal, repeat_enable;
 uniform float threshold = 0.1;
 uniform float aa_scale = 17.6;
 uniform float base_line_thickness = 0.38197;
+uniform float terrain_saturation: hint_range(0.0, 3.0) = 1.4;
 const int ML = 0;
 
 // Diagonal line blending logic
@@ -32,6 +33,8 @@ void fragment() {
 
 	vec3 subview_texture = texture(subview_image,UV).rgb;
 	vec3 terrain_texture = texture(terrain_image,UV).rgb;
+	float terrain_lum = dot(terrain_texture, vec3(0.2126, 0.7152, 0.0722));
+	terrain_texture = mix(vec3(terrain_lum), terrain_texture, terrain_saturation);
 	vec3 normalmap_texture = texture(normalmap_image,UV).rgb;
 
 	// Apply smoothing
@@ -85,6 +88,6 @@ void fragment() {
 
 
 	//ALBEDO = s.rgb; //final_color;//s.rgb; //mix(s.rgb, terrain_texture, 0.4);
-	ALBEDO = mix(s.rgb, terrain_texture, 0.5);
+	ALBEDO = mix(s.rgb, terrain_texture, 0.35);
 	NORMAL_MAP = normalmap_texture;
 }

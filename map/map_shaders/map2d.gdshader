@@ -44,7 +44,7 @@ void fragment() {
 	// Darken province borders
 	float is_border = 1.0 - province_border_texture.r;
 	float is_territory_border = 1.0 - territory_border_texture.r;
-	final_color.rgb = mix(final_color.rgb, final_color.rgb * 0.9, is_border);
+	final_color.rgb = mix(final_color.rgb, final_color.rgb * 0.85, is_border);
 
 	// Selection edge highlighting (green = selected province, white = its territory)
 	if (length(selected_color.rgb) > 0.01) {

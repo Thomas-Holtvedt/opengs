@@ -17,5 +17,8 @@ The project is covered by the MIT licence, and thus is free for anyone to use fo
 ## YouTube 
 The creation is documented on the [YouTube Tutorial Series](https://www.youtube.com/playlist?list=PLz7HHPGLr7NLGJOin49X8VKNHoMHNfaKd)
 
+## Tools and resources
+[Map resources Google Drive](https://drive.google.com/drive/folders/1Wn_HeBmMHy_Kt2FIOBzQ3cn3ouTiGyt6?usp=sharing)
+
 ## Delivered and maintained by 
 <img width="350" height="350" alt="gsi-logo" src="https://github.com/user-attachments/assets/e7210566-7997-4d82-845e-48f249d439a0" />

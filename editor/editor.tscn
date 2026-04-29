@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c3qoli5ipe8qr" path="res://editor/controller/controller.tscn" id="3_er7c6"]
 [ext_resource type="PackedScene" uid="uid://fhm3x6nwgara" path="res://editor/ui/province_editor.tscn" id="4_j82do"]
 [ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="5_6j37k"]
+[ext_resource type="AudioStream" uid="uid://bhbweuth6d8xt" path="res://assets/audio/Open_World_-_Happiness_Full.WAV" id="6_6hpnh"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_er7c6"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -26,7 +27,7 @@ script = ExtResource("1_ycap1")
 environment = SubResource("Environment_6j37k")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1045693937]
-transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+transform = Transform3D(-0.8660254, -0.43301278, 0.24999999, 2.7805946e-08, 0.49999994, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 20, 0)
 shadow_enabled = true
 
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
@@ -36,6 +37,10 @@ shadow_enabled = true
 [node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
 
 [node name="MapModes" parent="." unique_id=206583246 instance=ExtResource("5_6j37k")]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=547669375]
+stream = ExtResource("6_6hpnh")
+autoplay = true
 
 [connection signal="province_selected" from="Controller" to="." method="_on_controller_province_selected"]
 [connection signal="change_controller" from="ProvinceEditor" to="." method="_on_province_editor_change_controller"]

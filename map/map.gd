@@ -8,15 +8,20 @@ var current_highlight: MapHighlight
 var all_map_modes: Dictionary[int, MapMode]
 var province_image: Image
 var province_image_offset: Vector2i
+var tex_gen: MapTextureGenerator
 
 
 func create_map_textures(db: Database) -> void:
 	province_image = map_sprite.texture.get_image()
 	@warning_ignore("integer_division")
 	province_image_offset = Vector2i(province_image.get_width() / 2, province_image.get_height() / 2)
-	var tex_gen: MapTextureGenerator = MapTextureGenerator.new(province_image)
-	tex_gen.create_map_textures(province_image, db)
+	tex_gen = MapTextureGenerator.new(province_image)
+	tex_gen.create_map_textures(db)
 	tex_gen.set_map_textures(map_material_2d)
+
+
+func update_map_texture(province: Province, db: Database) -> void:
+	tex_gen.update_map_texture(db, province.center, province.bounding_box)
 
 
 func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
@@ -30,6 +35,7 @@ func create_map_modes(db: Database) -> void:
 	for map_mode in MapMode.Type:
 		all_map_modes[MapMode.Type[map_mode]] = MapMode.new(db.province_color_to_lookup, db.color_to_province, MapMode.Type[map_mode])
 	current_map_mode = all_map_modes[0]
+	update_map()
 
 
 func create_country_labels(db: Database) -> void:
@@ -67,9 +73,13 @@ func update_map_modes(province: Province, country: Country, offset: int) -> void
 
 
 func highlight_province(province: Province):
+	highlight_provinces([province])
+
+
+func highlight_provinces(provinces: Array[Province]):
 	if current_highlight != null:
 		current_map_mode = current_highlight.remove_highlights(current_map_mode)
-	current_highlight = MapHighlight.new(province)
+	current_highlight = MapHighlight.new(provinces)
 	current_map_mode = current_highlight.apply_highlights(current_map_mode)
 	update_map()
 

@@ -9,13 +9,9 @@ var id: String
 var color: Color
 var type: Type
 var terrain: Terrain
-var center: Vector2
-var territory: Territory:
-	set(value):
-		if territory != null:
-			territory.provinces.erase(self)
-		territory = value
-		territory.provinces.append(self)
+var center: Vector2i
+var territory: Territory
+var bounding_box: int = 150
 		
 var province_owner: Country:
 	set(value):
@@ -31,3 +27,9 @@ func _init(province_id: String, province_type: Type, province_color: Color,  pro
 	self.center = province_center
 	self.type = province_type
 	self.terrain = province_terrain
+
+func set_territory(new_territory: Territory):
+	if territory != null:
+		territory.provinces.erase(self)
+	territory = new_territory
+	territory.provinces.append(self)

@@ -1,0 +1,57 @@
+extends Resource
+class_name MapTextureCache
+
+const CACHE_DIR: String = "user://map_cache"
+const LOOKUP_FILE: String = "lookup_texture.png"
+const BORDER_FILE: String = "border_texture.png"
+const TERRITORY_BORDER_FILE: String = "territory_border_texture.png"
+const COLOR_MAP_FILE: String = "province_color_to_lookup.data"
+
+var cache_id: String
+var available: bool
+
+
+func _init(src_data: PackedByteArray) -> void:
+	cache_id = Marshalls.raw_to_base64(src_data).md5_text()
+	available = FileAccess.file_exists(_cache_path(LOOKUP_FILE)) \
+			and FileAccess.file_exists(_cache_path(BORDER_FILE)) \
+			and FileAccess.file_exists(_cache_path(TERRITORY_BORDER_FILE)) \
+			and FileAccess.file_exists(_cache_path(COLOR_MAP_FILE))
+
+
+func load_lookup() -> Image:
+	return _load_image(LOOKUP_FILE, Image.FORMAT_RG8)
+
+
+func load_border() -> Image:
+	return _load_image(BORDER_FILE, Image.FORMAT_L8)
+
+
+func load_territory_border() -> Image:
+	return _load_image(TERRITORY_BORDER_FILE, Image.FORMAT_L8)
+
+
+func load_color_map(db: Database) -> void:
+	var f := FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.READ)
+	db.province_color_to_lookup = str_to_var(f.get_as_text())
+	f.close()
+
+
+func save(lookup_image: Image, border_image: Image, territory_border_image: Image, db: Database) -> void:
+	DirAccess.make_dir_recursive_absolute(CACHE_DIR + "/" + cache_id)
+	lookup_image.save_png(_cache_path(LOOKUP_FILE))
+	border_image.save_png(_cache_path(BORDER_FILE))
+	territory_border_image.save_png(_cache_path(TERRITORY_BORDER_FILE))
+	var f := FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
+	f.store_string(var_to_str(db.province_color_to_lookup))
+	f.close()
+
+
+func _load_image(file: String, format: Image.Format) -> Image:
+	var img := Image.load_from_file(_cache_path(file))
+	img.convert(format)
+	return img
+
+
+func _cache_path(filename: String) -> String:
+	return "{dir}/{id}/{file}".format({"dir": CACHE_DIR, "id": cache_id, "file": filename})

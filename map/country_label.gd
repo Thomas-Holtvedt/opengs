@@ -13,7 +13,7 @@ func initial_data(country: Country) -> void:
 	#country.map_label = self
 
 func update_data(country: Country) -> void:
-	var owned_cites = country.owned_provinces.filter(func(p): return p.center != Vector2(0,0))
+	var owned_cites = country.owned_provinces.filter(func(p): return p.center != Vector2i(0,0))
 	
 	if owned_cites.is_empty() or country.tag == "NNN":
 		$Label.hide()
