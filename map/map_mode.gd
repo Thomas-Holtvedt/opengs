@@ -4,52 +4,49 @@ class_name MapMode
 enum Type {POLITICAL, IDEOLOGY, TERRITORY, PROVINCE, TERRAIN}
 
 const PRIMARY_OFFSET: int = 0
+var type: Type
 var secondary_offset: int
 var highlight_offset: int
 var _province_color_to_lookup: Dictionary[Color, Color]
 var color_map: Image
 
 
-func _init(province_color_to_lookup: Dictionary[Color, Color], color_to_province: Dictionary[Color, Province], type: Type) -> void:
+func _init(province_color_to_lookup: Dictionary[Color, Color], color_to_province: Dictionary[Color, Province], mode_type: Type) -> void:
 	var num_lookup_rows: int = maxi(1, ceili(float(province_color_to_lookup.size()) / 256.0))
+	self.type = mode_type
 	secondary_offset = num_lookup_rows
 	highlight_offset = 2 * num_lookup_rows
-	color_map = _create_color_map(province_color_to_lookup, color_to_province, type, num_lookup_rows)
 	self._province_color_to_lookup = province_color_to_lookup
+	color_map = Image.create(256, 3 * num_lookup_rows, false, Image.FORMAT_RGB8)
+	for province_color: Color in province_color_to_lookup:
+		if color_to_province.has(province_color):
+			update_province(color_to_province[province_color])
 	self.set_image(color_map)
 
 
-func _create_color_map(province_color_to_lookup: Dictionary[Color, Color], color_to_province, type, num_lookup_rows: int) -> Image:
-	var _color_map: Image = Image.create(256, 3 * num_lookup_rows, false, Image.FORMAT_RGB8)
-	for province_color: Color in province_color_to_lookup:
-		if color_to_province.has(province_color):
-			var lookup: Color = province_color_to_lookup[province_color]
-			var x: int = roundi(lookup.r * 255)
-			var y: int = roundi(lookup.g * 255)
-			var province: Province = color_to_province[province_color]
-			if province.type == Province.Type.LAND:
-				match type:
-					Type.POLITICAL:
-						_color_map.set_pixel(x, y, province.province_owner.map_color)
-						_color_map.set_pixel(x, y + secondary_offset, province.province_controller.map_color)
+func update_province(province: Province) -> void:
+	if province.type != Province.Type.LAND:
+		return
+	var colors: Array[Color] = _compute_colors(province)
+	update_color_map(province.color, colors[0], PRIMARY_OFFSET)
+	update_color_map(province.color, colors[1], secondary_offset)
 
-					Type.IDEOLOGY:
-						_color_map.set_pixel(x, y, _ideology_color(province.province_owner.ideology))
-						_color_map.set_pixel(x, y + secondary_offset, _ideology_color(province.province_controller.ideology))
 
-					Type.PROVINCE:
-						_color_map.set_pixel(x, y, province_color)
-						_color_map.set_pixel(x, y + secondary_offset, province_color)
-
-					Type.TERRITORY:
-						var sibling_province: Province = province.territory.provinces[0]
-						_color_map.set_pixel(x, y, sibling_province.color)
-						_color_map.set_pixel(x, y + secondary_offset, sibling_province.color)
-
-					Type.TERRAIN:
-						_color_map.set_pixel(x, y, _terrain_color(province.terrain))
-						_color_map.set_pixel(x, y + secondary_offset, _terrain_color(province.terrain))
-	return _color_map
+func _compute_colors(province: Province) -> Array[Color]:
+	match type:
+		Type.POLITICAL:
+			return [province.province_owner.map_color, province.province_controller.map_color]
+		Type.IDEOLOGY:
+			return [_ideology_color(province.province_owner.ideology), _ideology_color(province.province_controller.ideology)]
+		Type.PROVINCE:
+			return [province.color, province.color]
+		Type.TERRITORY:
+			var sibling: Province = province.territory.provinces[0]
+			return [sibling.color, sibling.color]
+		Type.TERRAIN:
+			var terrain_color: Color = _terrain_color(province.terrain)
+			return [terrain_color, terrain_color]
+	return [Color.BLACK, Color.BLACK]
 
 
 func _ideology_color(ideology: Country.Ideology) -> Color:
@@ -88,15 +85,6 @@ func _terrain_color(terrain: Province.Terrain) -> Color:
 		Province.Terrain.LAKES:
 			return Color.BLUE
 	return Color.BLACK
-
-
-#func update_color_map(input_color: Color, output_color: Color, offset: int) -> void:
-	#var lookup: Color = _province_color_to_lookup.get(input_color, null)
-	#if lookup:
-		#var x: int = roundi(lookup.r * 255)
-		#var y: int = roundi(lookup.g * 255)
-		#color_map.set_pixel(x, y + offset, output_color)
-		#self.set_image(color_map)
 
 
 func update_color_map(input_color: Color, output_color: Color, offset: int) -> void:

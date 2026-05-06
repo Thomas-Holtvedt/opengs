@@ -77,6 +77,8 @@ func _on_province_editor_change_type(index: int) -> void:
 func _on_province_editor_change_terrain(index: int) -> void:
 	for province: Province in selected_provinces:
 		province.terrain = Province.Terrain.values()[index]
+		$Map.update_terrain_map_mode(province)
+	$Map.update_map()
 
 func _on_province_editor_change_controller_territory(controller: Country) -> void:
 	var visited: Dictionary = {}

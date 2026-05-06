@@ -72,6 +72,12 @@ func update_map_modes(province: Province, country: Country, offset: int) -> void
 		mm.commit()
 
 
+func update_terrain_map_mode(province: Province) -> void:
+	var terrain_mode: MapMode = all_map_modes[MapMode.Type.TERRAIN]
+	terrain_mode.update_province(province)
+	terrain_mode.commit()
+
+
 func highlight_province(province: Province):
 	highlight_provinces([province])
 
