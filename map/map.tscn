@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c7aii77k7h0xg" path="res://map/map.gd" id="1_a0dt8"]
 [ext_resource type="Texture2D" uid="uid://cm52ilk0klnp" path="res://map/map_data/provinces.png" id="1_hgrid"]
 [ext_resource type="Shader" uid="uid://etl1fouj3y0j" path="res://map/map_shaders/map3d.gdshader" id="2_4hjbm"]
+[ext_resource type="Texture2D" uid="uid://d3vp8kji11mh3" path="res://map/map_data/height.png" id="3_5jdw0"]
 [ext_resource type="Texture2D" uid="uid://b25f0j7j8gqai" path="res://map/map_data/normal.png" id="3_kffv2"]
 [ext_resource type="Material" uid="uid://b62uxcw6bw4d6" path="res://map/map_shaders/map2D.tres" id="3_lgq1i"]
 [ext_resource type="Texture2D" uid="uid://c2awdr8xkjr6h" path="res://map/map_data/ne2.png" id="4_7lyie"]
@@ -17,15 +18,20 @@ shader = ExtResource("2_4hjbm")
 shader_parameter/terrain_image = ExtResource("4_7lyie")
 shader_parameter/subview_image = SubResource("ViewportTexture_lgq1i")
 shader_parameter/normalmap_image = ExtResource("3_kffv2")
+shader_parameter/heightmap_image = ExtResource("3_5jdw0")
 shader_parameter/threshold = 0.001
 shader_parameter/aa_scale = 1000.0
 shader_parameter/base_line_thickness = 0.38197
 shader_parameter/terrain_saturation = 1.4
+shader_parameter/height_scale = 2.0
+shader_parameter/normal_strength = 1.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_hgrid"]
 resource_local_to_scene = true
 material = SubResource("ShaderMaterial_lgq1i")
 size = Vector2(500, 250)
+subdivide_width = 1999
+subdivide_depth = 999
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_hgrid"]
 size = Vector3(500, 0.01, 250)
@@ -34,6 +40,7 @@ size = Vector3(500, 0.01, 250)
 script = ExtResource("1_a0dt8")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=117193191]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16053772, 0, -0.0067253113)
 mesh = SubResource("PlaneMesh_hgrid")
 
 [node name="SubViewport" type="SubViewport" parent="MeshInstance3D" unique_id=466323107]

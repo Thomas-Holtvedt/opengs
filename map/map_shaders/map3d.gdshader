@@ -4,13 +4,33 @@ shader_type spatial;
 uniform sampler2D terrain_image: source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D subview_image: source_color, filter_linear_mipmap, repeat_enable;
 uniform sampler2D normalmap_image: hint_normal, repeat_enable;
+uniform sampler2D heightmap_image: hint_default_black, filter_linear, repeat_disable;
 
 // Parameters
 uniform float threshold = 0.1;
 uniform float aa_scale = 17.6;
 uniform float base_line_thickness = 0.38197;
 uniform float terrain_saturation: hint_range(0.0, 3.0) = 1.4;
+uniform float height_scale = 0.0;
+uniform float normal_strength = 1.0;
 const int ML = 0;
+
+// 0x87 / 0xFF — sea level reference: #878787 maps to elevation 0.
+const float SEA_LEVEL = 0.52941176;
+
+void vertex() {
+	vec2 texel = 1.0 / vec2(textureSize(heightmap_image, 0));
+	float h = texture(heightmap_image, UV).r - SEA_LEVEL;
+	VERTEX.y += h * height_scale;
+
+	// Per-vertex normal from heightmap gradient (central differences).
+	// SEA_LEVEL offset cancels in the differences, so no need to subtract it here.
+	float h_l = texture(heightmap_image, UV - vec2(texel.x, 0.0)).r;
+	float h_r = texture(heightmap_image, UV + vec2(texel.x, 0.0)).r;
+	float h_d = texture(heightmap_image, UV - vec2(0.0, texel.y)).r;
+	float h_u = texture(heightmap_image, UV + vec2(0.0, texel.y)).r;
+	NORMAL = normalize(vec3((h_l - h_r) * height_scale, normal_strength, (h_d - h_u) * height_scale));
+}
 
 // Diagonal line blending logic
 bool diag(inout vec4 sum, vec2 ip, vec2 p1, vec2 p2, float thickness, float scale) {

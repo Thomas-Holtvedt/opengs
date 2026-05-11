@@ -32,7 +32,7 @@ func load_territory_border() -> Image:
 
 
 func load_color_map(db: Database) -> void:
-	var f := FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.READ)
+	var f: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.READ)
 	db.province_color_to_lookup = str_to_var(f.get_as_text())
 	f.close()
 
@@ -42,13 +42,13 @@ func save(lookup_image: Image, border_image: Image, territory_border_image: Imag
 	lookup_image.save_png(_cache_path(LOOKUP_FILE))
 	border_image.save_png(_cache_path(BORDER_FILE))
 	territory_border_image.save_png(_cache_path(TERRITORY_BORDER_FILE))
-	var f := FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
 	f.store_string(var_to_str(db.province_color_to_lookup))
 	f.close()
 
 
 func _load_image(file: String, format: Image.Format) -> Image:
-	var img := Image.load_from_file(_cache_path(file))
+	var img: Image = Image.load_from_file(_cache_path(file))
 	img.convert(format)
 	return img
 

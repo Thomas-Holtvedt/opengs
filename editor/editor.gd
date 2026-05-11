@@ -36,7 +36,7 @@ func _on_province_editor_change_owner(province_owner: Country) -> void:
 		if province.province_owner not in old_owner_list:
 			old_owner_list.append(province.province_owner)
 		province.province_owner = province_owner
-		$Map.update_map_modes(province, province_owner, MapMode.PRIMARY_OFFSET)
+		$Map.update_map_modes(province)
 	$Map.update_map()
 	$Map.update_country_label(province_owner)
 	for old_owner: Country in old_owner_list:
@@ -46,7 +46,7 @@ func _on_province_editor_change_owner(province_owner: Country) -> void:
 func _on_province_editor_change_controller(controller: Country) -> void:
 	for province: Province in selected_provinces:
 		province.province_controller = controller
-		$Map.update_map_modes(province, controller, $Map.current_map_mode.secondary_offset)
+		$Map.update_map_modes(province)
 	$Map.update_map()
 
 
@@ -63,7 +63,7 @@ func _on_province_editor_change_owner_territory(province_owner: Country) -> void
 			if province.province_owner not in old_owner_list:
 				old_owner_list.append(province.province_owner)
 			province.province_owner = province_owner
-			$Map.update_map_modes(province, province_owner, MapMode.PRIMARY_OFFSET)
+			$Map.update_map_modes(province)
 	$Map.update_map()
 	$Map.update_country_label(province_owner)
 	for old_owner: Country in old_owner_list:
@@ -77,7 +77,7 @@ func _on_province_editor_change_type(index: int) -> void:
 func _on_province_editor_change_terrain(index: int) -> void:
 	for province: Province in selected_provinces:
 		province.terrain = Province.Terrain.values()[index]
-		$Map.update_terrain_map_mode(province)
+		$Map.update_map_modes(province)
 	$Map.update_map()
 
 func _on_province_editor_change_controller_territory(controller: Country) -> void:
@@ -90,7 +90,7 @@ func _on_province_editor_change_controller_territory(controller: Country) -> voi
 				continue
 			visited[province] = true
 			province.province_controller = controller
-			$Map.update_map_modes(province, controller, $Map.current_map_mode.secondary_offset)
+			$Map.update_map_modes(province)
 	$Map.update_map()
 
 

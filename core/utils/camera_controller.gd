@@ -6,45 +6,40 @@ class_name CameraController
 @onready var camera_socket: Node3D = $CameraSocket
 
 @export_category("Camera Motion Control")
-@export var camera_can_process := true
-@export var camera_can_move := true
-@export var camera_can_zoom := true
-@export var camera_can_rotate_by_mouse_offset := true
-@export var camera_can_rotate_by_keys := true
-@export var camera_can_automatic_pan := false
+@export var camera_can_process: bool = true
+@export var camera_can_move: bool = true
+@export var camera_can_zoom: bool = true
+@export var camera_can_rotate_by_mouse_offset: bool = true
+@export var camera_can_rotate_by_keys: bool = true
+@export var camera_can_automatic_pan: bool = false
 
-@export_group("⚠️ Inspector Warning ⚠️")
-@export_multiline var inspector_warning_note := """\
-Remote/runtime Inspector edits of the properties below are temporary only.
-Edit the scene node and save to persist changes.\
-"""
 @export_category("Camera Move Settings")
-@export var camera_move_acceleration_speed_factor := Vector3(0.5, 0.5, 0.5)
-@export var camera_move_velocity_half_life := 0.15
+@export var camera_move_acceleration_speed_factor: Vector3 = Vector3(0.5, 0.5, 0.5)
+@export var camera_move_velocity_half_life: float = 0.15
 
-@export var camera_position_min_bound := Vector3(-INF, -INF, -INF)
-@export var camera_position_max_bound := Vector3(INF, INF, INF)
+@export var camera_position_min_bound: Vector3 = Vector3(-INF, -INF, -INF)
+@export var camera_position_max_bound: Vector3 = Vector3(INF, INF, INF)
 
 @export_category("Camera Automatic Pan Settings")
-@export var camera_automatic_pan_acceleration_speed_factor := 0.5
-@export var camera_automatic_pan_velocity_half_life := 0.06
-@export_range(0,32,4) var camera_automatic_pan_margin := 16
+@export var camera_automatic_pan_acceleration_speed_factor: float = 0.5
+@export var camera_automatic_pan_velocity_half_life: float = 0.06
+@export_range(0, 32, 4) var camera_automatic_pan_margin: int = 16
 
 @export_category("Camera Rotation Settings")
-@export var camera_rotate_mouse_acceleration_speed_factor := Vector2(0.2, 0.2)
-@export var camera_rotate_mouse_velocity_half_life := 0.00
+@export var camera_rotate_mouse_acceleration_speed_factor: Vector2 = Vector2(0.2, 0.2)
+@export var camera_rotate_mouse_velocity_half_life: float = 0.00
 
-@export var camera_rotate_keys_acceleration_speed_factor := Vector2(0.6, 0.6)
-@export var camera_rotate_keys_velocity_half_life := 0.15
+@export var camera_rotate_keys_acceleration_speed_factor: Vector2 = Vector2(0.6, 0.6)
+@export var camera_rotate_keys_velocity_half_life: float = 0.15
 
-@export var camera_rotation_min_bound := Vector2(deg_to_rad(-90), -INF)
-@export var camera_rotation_max_bound := Vector2(deg_to_rad(-15), INF)
+@export var camera_rotation_min_bound: Vector2 = Vector2(deg_to_rad(-90), -INF)
+@export var camera_rotation_max_bound: Vector2 = Vector2(deg_to_rad(-15), INF)
 
 @export_category("Camera Zoom Settings")
-@export var camera_zoom_acceleration_speed_factor := 300.0
-@export var camera_zoom_velocity_half_life := 0.15
-@export var camera_zoom_min_bound := 10.0
-@export var camera_zoom_max_bound := 1000.0
+@export var camera_zoom_acceleration_speed_factor: float = 3.0
+@export var camera_zoom_velocity_half_life: float = 0.15
+@export var camera_zoom_min_bound: float = 10.0
+@export var camera_zoom_max_bound: float = 1000.0
 
 # Control Variables
 class CameraTranslationCalculator extends PVACalculator: # Base class for camera movement and panning
@@ -85,14 +80,7 @@ class MovementCalculator extends CameraTranslationCalculator:
 		self.frame_acceleration = self.frame_acceleration.normalized()
 		return self.frame_acceleration
 
-var camera_move := MovementCalculator.new(
-	self, # global_node
-	camera_move_acceleration_speed_factor,
-	camera_move_velocity_half_life,
-	camera_position_min_bound,
-	camera_position_max_bound,
-	Vector3.ZERO,
-)
+var camera_move: MovementCalculator
 
 
 # Camera Panning by screen edges
@@ -120,14 +108,7 @@ class AutomaticPanCalculator extends CameraTranslationCalculator:
 
 		return global.transform.basis.x * pan_direction.x + global.transform.basis.z * pan_direction.y
 
-var camera_automatic_pan := AutomaticPanCalculator.new(
-	self, # global_node
-	camera_automatic_pan_acceleration_speed_factor,
-	camera_automatic_pan_velocity_half_life,
-	camera_position_min_bound,
-	camera_position_max_bound,
-	Vector3.ZERO,
-)
+var camera_automatic_pan: AutomaticPanCalculator
 
 
 # Camera Rotation to Mouse Offsets on X and Y
@@ -150,21 +131,14 @@ class MouseRotationCalculator extends PVACalculator:
 	func get_final_frame_acceleration() -> Vector2:
 		if self.mouse_last_position == null:
 			return Vector2.ZERO
-		var mouse_offset := global.get_viewport().get_mouse_position()
+		var mouse_offset: Vector2 = global.get_viewport().get_mouse_position()
 		mouse_offset -= self.mouse_last_position
 		self.mouse_last_position = global.get_viewport().get_mouse_position()
 		self.frame_acceleration.x -= mouse_offset.y # This invertion is intentional
 		self.frame_acceleration.y -= mouse_offset.x
 		return self.frame_acceleration
 
-var camera_rotate_mouse := MouseRotationCalculator.new(
-	self, # global_node
-	camera_rotate_mouse_acceleration_speed_factor,
-	camera_rotate_mouse_velocity_half_life,
-	camera_rotation_min_bound,
-	camera_rotation_max_bound,
-	Vector2.ZERO,
-)
+var camera_rotate_mouse: MouseRotationCalculator
 
 
 # Camera Rotation to Keys on X and Y
@@ -191,14 +165,7 @@ class KeysRotationCalculator extends PVACalculator:
 			self.frame_acceleration += Vector2(1, 0)
 		return self.frame_acceleration
 
-var camera_rotate_keys := KeysRotationCalculator.new(
-	self, # global_node
-	camera_rotate_keys_acceleration_speed_factor,
-	camera_rotate_keys_velocity_half_life,
-	camera_rotation_min_bound,
-	camera_rotation_max_bound,
-	Vector2.ZERO,
-)
+var camera_rotate_keys: KeysRotationCalculator
 
 
 # Camera Zooming
@@ -220,14 +187,62 @@ class ZoomCalculator extends PVACalculator:
 	func get_final_frame_acceleration() -> float:
 		return self.frame_acceleration
 
-var camera_zoom := ZoomCalculator.new(
-	self, # global_node
-	camera_zoom_acceleration_speed_factor,
-	camera_zoom_velocity_half_life,
-	camera_zoom_min_bound,
-	camera_zoom_max_bound,
-	0.0,
-)
+	func update_velocity() -> void:
+		# Scale step by current zoom: closer = smaller increments, farther = larger.
+		# An in-tick reduces z by fraction f = factor * half_life / ln(2); a symmetric
+		# out-tick must therefore use multiplier 1/(1-f) so successive in+out cancel.
+		var safe_zoom = _clamp_value(get_value())
+		var accel = self.get_final_frame_acceleration()
+		if accel > 0:
+			var in_fraction = clampf(self.acceleration_speed_factor * self.velocity_half_life / log(2), 0.0, 0.95)
+			accel /= (1.0 - in_fraction)
+		self.velocity += accel * self.acceleration_speed_factor * safe_zoom
+		self.frame_acceleration = self.starting_value
+
+var camera_zoom: ZoomCalculator
+
+
+func _ready() -> void:
+	camera_move = MovementCalculator.new(
+		self,
+		camera_move_acceleration_speed_factor,
+		camera_move_velocity_half_life,
+		camera_position_min_bound,
+		camera_position_max_bound,
+		Vector3.ZERO,
+	)
+	camera_automatic_pan = AutomaticPanCalculator.new(
+		self,
+		camera_automatic_pan_acceleration_speed_factor,
+		camera_automatic_pan_velocity_half_life,
+		camera_position_min_bound,
+		camera_position_max_bound,
+		Vector3.ZERO,
+	)
+	camera_rotate_mouse = MouseRotationCalculator.new(
+		self,
+		camera_rotate_mouse_acceleration_speed_factor,
+		camera_rotate_mouse_velocity_half_life,
+		camera_rotation_min_bound,
+		camera_rotation_max_bound,
+		Vector2.ZERO,
+	)
+	camera_rotate_keys = KeysRotationCalculator.new(
+		self,
+		camera_rotate_keys_acceleration_speed_factor,
+		camera_rotate_keys_velocity_half_life,
+		camera_rotation_min_bound,
+		camera_rotation_max_bound,
+		Vector2.ZERO,
+	)
+	camera_zoom = ZoomCalculator.new(
+		self,
+		camera_zoom_acceleration_speed_factor,
+		camera_zoom_velocity_half_life,
+		camera_zoom_min_bound,
+		camera_zoom_max_bound,
+		0.0,
+	)
 
 
 func _process(delta: float) -> void:

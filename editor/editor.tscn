@@ -33,6 +33,7 @@ shadow_enabled = true
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
 
 [node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
+camera_zoom_acceleration_speed_factor = 1.5
 
 [node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
 
@@ -40,7 +41,6 @@ shadow_enabled = true
 
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=547669375]
 stream = ExtResource("6_6hpnh")
-autoplay = true
 
 [connection signal="province_selected" from="Controller" to="." method="_on_controller_province_selected"]
 [connection signal="change_controller" from="ProvinceEditor" to="." method="_on_province_editor_change_controller"]

@@ -1,6 +1,39 @@
 [gd_scene format=3 uid="uid://b1l6ah2gqbe0y"]
 
 [ext_resource type="Script" uid="uid://b1qsgvr8wdw2i" path="res://map/country_label.gd" id="1_421nt"]
+[ext_resource type="Script" uid="uid://b470gp1p57v08" path="res://core/utils/curved_label.gd" id="2_235pp"]
+
+[sub_resource type="Curve2D" id="Curve2D_235pp"]
+resource_local_to_scene = true
+
+[sub_resource type="FontFile" id="FontFile_ibshd"]
+subpixel_positioning = 0
+msdf_pixel_range = 14
+msdf_size = 128
+cache/0/variation_coordinates = {}
+cache/0/face_index = 0
+cache/0/embolden = 0.0
+cache/0/transform = Transform2D(1, 0, 0, 1, 0, 0)
+cache/0/spacing_top = 0
+cache/0/spacing_bottom = 0
+cache/0/spacing_space = 0
+cache/0/spacing_glyph = 0
+cache/0/baseline_offset = 0.0
+cache/0/16/0/ascent = 0.0
+cache/0/16/0/descent = 0.0
+cache/0/16/0/underline_position = 0.0
+cache/0/16/0/underline_thickness = 0.0
+cache/0/16/0/scale = 1.0
+cache/0/200/0/ascent = 0.0
+cache/0/200/0/descent = 0.0
+cache/0/200/0/underline_position = 0.0
+cache/0/200/0/underline_thickness = 0.0
+cache/0/200/0/scale = 1.0
+
+[sub_resource type="LabelSettings" id="LabelSettings_lopfl"]
+resource_local_to_scene = true
+font = SubResource("FontFile_ibshd")
+font_size = 200
 
 [node name="CountryLabelTemplate" type="Node2D" unique_id=1540970901]
 script = ExtResource("1_421nt")
@@ -10,6 +43,7 @@ visible = false
 default_color = Color(0.96149117, 1.49205325e-05, 0.63741904, 1)
 
 [node name="Label" type="Label" parent="." unique_id=1964307627]
+visible = false
 offset_right = 40.0
 offset_bottom = 23.0
 size_flags_horizontal = 3
@@ -19,4 +53,11 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 theme_override_constants/shadow_outline_size = 1
-theme_override_font_sizes/font_size = 128
+
+[node name="Path2D" type="Path2D" parent="." unique_id=1470576568]
+curve = SubResource("Curve2D_235pp")
+script = ExtResource("2_235pp")
+text = "Test"
+debug_draw = true
+debug_color = Color(1, 0, 0, 1)
+label_settings = SubResource("LabelSettings_lopfl")
