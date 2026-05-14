@@ -20,8 +20,20 @@ func create_map_textures(db: Database) -> void:
 	tex_gen.set_map_textures(map_material_2d)
 
 
-func update_map_texture(province: Province, db: Database) -> void:
-	tex_gen.update_map_texture(db, province.center, province.bounding_box)
+func update_map_texture(province: Province, db: Database, refresh: bool = true) -> void:
+	tex_gen.update_map_texture(db, province.center, province.bounding_box, refresh)
+
+
+func refresh_territory_sdf() -> void:
+	tex_gen.refresh_territory_sdf()
+
+
+func update_country_borders(province: Province, db: Database, refresh: bool = true) -> void:
+	tex_gen.update_country_borders(db, province.center, province.bounding_box, refresh)
+
+
+func refresh_country_sdf() -> void:
+	tex_gen.refresh_country_sdf()
 
 
 func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
@@ -55,6 +67,8 @@ func update_country_label(country: Country) -> void:
 
 func update_map() -> void:
 	map_material_2d.set_shader_parameter("color_map_image", current_map_mode)
+	var apply_fade: bool = current_map_mode.type == MapMode.Type.POLITICAL or current_map_mode.type == MapMode.Type.IDEOLOGY
+	map_material_2d.set_shader_parameter("apply_country_fade", apply_fade)
 
 
 func set_map_mode(map_mode: MapMode.Type) -> void:
@@ -66,9 +80,15 @@ func set_map_mode(map_mode: MapMode.Type) -> void:
 	update_map()
 
 
-func update_map_modes(province: Province) -> void:
+func update_map_modes(province: Province, commit: bool = true) -> void:
 	for mm in all_map_modes.values():
 		mm.update_province(province)
+		if commit:
+			mm.commit()
+
+
+func commit_map_modes() -> void:
+	for mm in all_map_modes.values():
 		mm.commit()
 
 
@@ -85,7 +105,10 @@ func highlight_provinces(provinces: Array[Province]):
 
 
 func get_preview_images(): # remove in PROD, just for visuals in editor
-	map_material_2d.get_shader_parameter("lookup_image").get_image().save_png("res://map/map_data/lut_preview.png") 
+	map_material_2d.get_shader_parameter("lookup_image").get_image().save_png("res://map/map_data/lut_preview.png")
 	map_material_2d.get_shader_parameter("province_border_image").get_image().save_png("res://map/map_data/bt_preview.png")
 	map_material_2d.get_shader_parameter("territory_border_image").get_image().save_png("res://map/map_data/tbt_preview.png")
+	tex_gen.province_sdf_texture.get_image().save_png("res://map/map_data/sdf_preview.png")
+	tex_gen.territory_sdf_texture.get_image().save_png("res://map/map_data/territory_sdf_preview.png")
+	tex_gen.country_sdf_texture.get_image().save_png("res://map/map_data/country_sdf_preview.png")
 	current_map_mode.get_image().save_png("res://map/map_data/cmap_preview.png")

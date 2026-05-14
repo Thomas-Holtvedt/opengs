@@ -31,6 +31,7 @@ transform = Transform3D(-0.8660254, -0.43301278, 0.24999999, 2.7805946e-08, 0.49
 shadow_enabled = true
 
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.24263763, -1.5258789e-05, 0.0027389526)
 
 [node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
 camera_zoom_acceleration_speed_factor = 0.75

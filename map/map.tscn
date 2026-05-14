@@ -19,11 +19,8 @@ shader_parameter/terrain_image = ExtResource("4_7lyie")
 shader_parameter/subview_image = SubResource("ViewportTexture_lgq1i")
 shader_parameter/normalmap_image = ExtResource("3_kffv2")
 shader_parameter/heightmap_image = ExtResource("3_5jdw0")
-shader_parameter/threshold = 0.001
-shader_parameter/aa_scale = 1000.0
-shader_parameter/base_line_thickness = 0.38197
-shader_parameter/terrain_saturation = 1.4
-shader_parameter/height_scale = 2.0
+shader_parameter/terrain_saturation = 1.4000000665
+shader_parameter/height_scale = 3.0
 shader_parameter/normal_strength = 1.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_hgrid"]
@@ -44,6 +41,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16053772, 0, -0.0067253113)
 mesh = SubResource("PlaneMesh_hgrid")
 
 [node name="SubViewport" type="SubViewport" parent="MeshInstance3D" unique_id=466323107]
+transparent_bg = true
 size = Vector2i(5000, 2500)
 
 [node name="Sprite2D" type="Sprite2D" parent="MeshInstance3D/SubViewport" unique_id=1010738619]

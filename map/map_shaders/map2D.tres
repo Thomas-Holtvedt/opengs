@@ -2,9 +2,12 @@
 
 [ext_resource type="Shader" uid="uid://btphu3wypjt2g" path="res://map/map_shaders/map2d.gdshader" id="1_b51fn"]
 [ext_resource type="Texture2D" uid="uid://r8jco0bpjxmx" path="res://map/map_data/cmap_preview.png" id="2_xpg73"]
+[ext_resource type="Texture2D" uid="uid://b3y2i51wqy1vr" path="res://map/map_data/country_sdf_preview.png" id="3_pp5hs"]
 [ext_resource type="Texture2D" uid="uid://e65cxs6ujf7b" path="res://map/map_data/lut_preview.png" id="3_wfbty"]
 [ext_resource type="Texture2D" uid="uid://ktl3ip14f7f5" path="res://map/map_data/bt_preview.png" id="4_causp"]
 [ext_resource type="Texture2D" uid="uid://ha2r5g306i3" path="res://map/map_data/tbt_preview.png" id="5_pp5hs"]
+[ext_resource type="Texture2D" uid="uid://c8ge16iogimit" path="res://map/map_data/sdf_preview.png" id="6_lphem"]
+[ext_resource type="Texture2D" uid="uid://b4blfscuqiste" path="res://map/map_data/territory_sdf_preview.png" id="8_ab1xc"]
 
 [resource]
 resource_local_to_scene = true
@@ -13,3 +16,10 @@ shader_parameter/lookup_image = ExtResource("3_wfbty")
 shader_parameter/color_map_image = ExtResource("2_xpg73")
 shader_parameter/province_border_image = ExtResource("4_causp")
 shader_parameter/territory_border_image = ExtResource("5_pp5hs")
+shader_parameter/province_sdf_image = ExtResource("6_lphem")
+shader_parameter/territory_sdf_image = ExtResource("8_ab1xc")
+shader_parameter/country_sdf_image = ExtResource("3_pp5hs")
+shader_parameter/selection_thickness = 1.0000000475
+shader_parameter/apply_country_fade = true
+shader_parameter/country_fade_inwards = 128.0
+shader_parameter/country_fade_outwards = 1.0000000475
