@@ -7,24 +7,24 @@
 [ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="5_6j37k"]
 [ext_resource type="AudioStream" uid="uid://bhbweuth6d8xt" path="res://assets/audio/Open_World_-_Happiness_Full.WAV" id="6_6hpnh"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_er7c6"]
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_6hpnh"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
 ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
 
-[sub_resource type="Sky" id="Sky_j82do"]
-sky_material = SubResource("ProceduralSkyMaterial_er7c6")
+[sub_resource type="Sky" id="Sky_swf4p"]
+sky_material = SubResource("ProceduralSkyMaterial_6hpnh")
 
-[sub_resource type="Environment" id="Environment_6j37k"]
+[sub_resource type="Environment" id="Environment_aws7q"]
 background_mode = 2
-sky = SubResource("Sky_j82do")
+sky = SubResource("Sky_swf4p")
 tonemap_mode = 2
 glow_enabled = true
 
 [node name="Editor" type="Node3D" unique_id=1733269734]
 script = ExtResource("1_ycap1")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=666524815]
-environment = SubResource("Environment_6j37k")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=739399223]
+environment = SubResource("Environment_aws7q")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1045693937]
 transform = Transform3D(-0.8660254, -0.43301278, 0.24999999, 2.7805946e-08, 0.49999994, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 20, 0)
@@ -33,7 +33,7 @@ shadow_enabled = true
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
 
 [node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
-camera_zoom_acceleration_speed_factor = 1.5
+camera_zoom_acceleration_speed_factor = 0.75
 
 [node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
 

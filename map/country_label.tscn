@@ -38,22 +38,6 @@ font_size = 200
 [node name="CountryLabelTemplate" type="Node2D" unique_id=1540970901]
 script = ExtResource("1_421nt")
 
-[node name="Line2D" type="Line2D" parent="." unique_id=184565307]
-visible = false
-default_color = Color(0.96149117, 1.49205325e-05, 0.63741904, 1)
-
-[node name="Label" type="Label" parent="." unique_id=1964307627]
-visible = false
-offset_right = 40.0
-offset_bottom = 23.0
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 5
-theme_override_constants/shadow_outline_size = 1
-
 [node name="Path2D" type="Path2D" parent="." unique_id=1470576568]
 curve = SubResource("Curve2D_235pp")
 script = ExtResource("2_235pp")
