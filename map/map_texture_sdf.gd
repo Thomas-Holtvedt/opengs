@@ -6,6 +6,32 @@ const ENCODE_SHADER_PATH: String = "res://map/map_shaders/jfa_encode.glsl"
 const LOCAL_SIZE: int = 8
 const SENTINEL: int = 0xFFFF
 
+# Cached compute device + compiled shaders. Creating a local RenderingDevice and compiling
+# the SPIR-V shaders is the dominant cost of a JFA build (several hundred ms on Vulkan/Windows
+# in practice), so we set them up lazily on first use and reuse them for every subsequent
+# build_sdf / build_sdf_region call. The RIDs live for the lifetime of the process.
+static var _rd: RenderingDevice = null
+static var _jfa_shader: RID
+static var _jfa_pipeline: RID
+static var _encode_shader: RID
+static var _encode_pipeline: RID
+
+
+static func _ensure_compute_resources() -> bool:
+	if _rd != null:
+		return true
+	_rd = RenderingServer.create_local_rendering_device()
+	if _rd == null:
+		push_error("MapTextureSDF: could not create local RenderingDevice")
+		return false
+	var jfa_file: RDShaderFile = load(JFA_SHADER_PATH)
+	_jfa_shader = _rd.shader_create_from_spirv(jfa_file.get_spirv())
+	_jfa_pipeline = _rd.compute_pipeline_create(_jfa_shader)
+	var encode_file: RDShaderFile = load(ENCODE_SHADER_PATH)
+	_encode_shader = _rd.shader_create_from_spirv(encode_file.get_spirv())
+	_encode_pipeline = _rd.compute_pipeline_create(_encode_shader)
+	return true
+
 
 # Convenience: runs GPU JFA over the full L8 border mask and returns an RGBA8 Image.
 static func build_sdf(border_data: PackedByteArray, width: int, height: int) -> Image:
@@ -24,18 +50,13 @@ static func build_sdf_region(border_data: PackedByteArray, full_width: int, full
 	if rw <= 0 or rh <= 0:
 		return PackedByteArray()
 
-	var rd: RenderingDevice = RenderingServer.create_local_rendering_device()
-	if rd == null:
-		push_error("MapTextureSDF: could not create local RenderingDevice")
+	if not _ensure_compute_resources():
 		return PackedByteArray()
-
-	var jfa_file: RDShaderFile = load(JFA_SHADER_PATH)
-	var jfa_shader: RID = rd.shader_create_from_spirv(jfa_file.get_spirv())
-	var jfa_pipeline: RID = rd.compute_pipeline_create(jfa_shader)
-
-	var encode_file: RDShaderFile = load(ENCODE_SHADER_PATH)
-	var encode_shader: RID = rd.shader_create_from_spirv(encode_file.get_spirv())
-	var encode_pipeline: RID = rd.compute_pipeline_create(encode_shader)
+	var rd: RenderingDevice = _rd
+	var jfa_shader: RID = _jfa_shader
+	var jfa_pipeline: RID = _jfa_pipeline
+	var encode_shader: RID = _encode_shader
+	var encode_pipeline: RID = _encode_pipeline
 
 	var seed_format: RDTextureFormat = RDTextureFormat.new()
 	seed_format.format = RenderingDevice.DATA_FORMAT_R16G16_UINT
@@ -115,10 +136,8 @@ static func build_sdf_region(border_data: PackedByteArray, full_width: int, full
 	rd.free_rid(out_tex)
 	rd.free_rid(seed_a)
 	rd.free_rid(seed_b)
-	rd.free_rid(encode_pipeline)
-	rd.free_rid(encode_shader)
-	rd.free_rid(jfa_pipeline)
-	rd.free_rid(jfa_shader)
+	# Pipelines and shaders are cached on the class — do NOT free them here. They live for
+	# the lifetime of the process and get reused on every JFA call.
 
 	return rgba_bytes
 

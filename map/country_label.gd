@@ -5,6 +5,7 @@ class_name CountryLabel
 const PATH_SAMPLES: int = 20
 const FONT_FILL_RATIO: float = 1.6
 const MIN_FONT_SIZE: int = 10
+const MAX_SAGITTA_RATIO: float = 0.15
 
 
 func initial_data(country: Country) -> void:
@@ -14,14 +15,32 @@ func initial_data(country: Country) -> void:
 
 
 func update_data(country: Country) -> void:
-	var owned_cities: Array = country.owned_provinces.filter(
-		func(p: Province) -> bool: return p.center != Vector2i(0, 0)
-	)
-
-	if owned_cities.size() < 2 or country.tag == "NNN":
+	var points: PackedVector2Array = compute_curve_points(country)
+	if points.is_empty():
 		$Path2D.hide()
 		return
 	$Path2D.show()
+
+	$Path2D.curve.clear_points()
+	for p: Vector2 in points:
+		$Path2D.curve.add_point(p)
+
+	var path_length: float = $Path2D.curve.get_baked_length()
+	var name_length: int = max(1, country.base_name.length())
+	var font_size: int = max(
+		MIN_FONT_SIZE, int(path_length / name_length * FONT_FILL_RATIO)
+	)
+	$Path2D.label_settings.font_size = font_size
+	$Path2D.label_settings.outline_size = max(1, int(font_size * 0.04))
+	$Path2D.label_settings.outline_color = Color("BLACK")
+
+
+static func compute_curve_points(country: Country) -> PackedVector2Array:
+	var owned_cities: Array = country.owned_provinces.filter(
+		func(p: Province) -> bool: return p.center != Vector2i(0, 0)
+	)
+	if owned_cities.size() < 2 or country.tag == "NNN":
+		return PackedVector2Array()
 
 	var x_lo: float = INF
 	var x_hi: float = -INF
@@ -29,30 +48,57 @@ func update_data(country: Country) -> void:
 		x_lo = min(x_lo, float(city.center.x))
 		x_hi = max(x_hi, float(city.center.x))
 
-	$Path2D.curve.clear_points()
+	var points: PackedVector2Array = PackedVector2Array()
 	var quad: Variant = null
 	if owned_cities.size() >= 3:
 		quad = calculate_quadratic_regression(owned_cities)
 
 	if quad != null:
+		var mean_x: float = 0.0
+		for city: Province in owned_cities:
+			mean_x += float(city.center.x)
+		mean_x /= float(owned_cities.size())
+
+		# Recenter OLS coefficients around mean_x so c controls only curvature.
+		var y_at_mean: float = quad.x + quad.y * mean_x + quad.z * mean_x * mean_x
+		var slope_at_mean: float = quad.y + 2.0 * quad.z * mean_x
+		var c: float = quad.z
+
+		var width: float = x_hi - x_lo
+		var was_clamped: bool = false
+		if width > 0.0:
+			var max_c: float = 4.0 * MAX_SAGITTA_RATIO / width
+			var clamped_c: float = clamp(c, -max_c, max_c)
+			if clamped_c != c:
+				c = clamped_c
+				was_clamped = true
+
+		if was_clamped:
+			# OLS coefficients were extreme; re-anchor at the city centroid
+			# using the linear regression slope.
+			var mean_y: float = 0.0
+			for city: Province in owned_cities:
+				mean_y += float(city.center.y)
+			mean_y /= float(owned_cities.size())
+			var line: Vector2 = calculate_linear_regression(owned_cities)
+			y_at_mean = mean_y
+			slope_at_mean = line.y
+
 		for i: int in range(PATH_SAMPLES + 1):
 			var t: float = float(i) / PATH_SAMPLES
 			var x: float = lerp(x_lo, x_hi, t)
-			var y: float = quad.x + quad.y * x + quad.z * x * x
-			$Path2D.curve.add_point(Vector2(x, y))
+			var u: float = x - mean_x
+			var y: float = y_at_mean + slope_at_mean * u + c * u * u
+			points.append(Vector2(x, y))
 	else:
 		var line: Vector2 = calculate_linear_regression(owned_cities)
-		$Path2D.curve.add_point(Vector2(x_lo, line.x + line.y * x_lo))
-		$Path2D.curve.add_point(Vector2(x_hi, line.x + line.y * x_hi))
+		points.append(Vector2(x_lo, line.x + line.y * x_lo))
+		points.append(Vector2(x_hi, line.x + line.y * x_hi))
 
-	var path_length: float = $Path2D.curve.get_baked_length()
-	var name_length: int = max(1, country.base_name.length())
-	$Path2D.label_settings.font_size = max(
-		MIN_FONT_SIZE, int(path_length / name_length * FONT_FILL_RATIO)
-	)
+	return points
 
 
-func calculate_linear_regression(points: Array) -> Vector2:
+static func calculate_linear_regression(points: Array) -> Vector2:
 	var n: int = points.size()
 	var sum_x: float = 0.0
 	var sum_y: float = 0.0
@@ -72,7 +118,7 @@ func calculate_linear_regression(points: Array) -> Vector2:
 	return Vector2(intercept, slope)
 
 
-func calculate_quadratic_regression(points: Array) -> Variant:
+static func calculate_quadratic_regression(points: Array) -> Variant:
 	var n: float = float(points.size())
 	var sx: float = 0.0
 	var sx2: float = 0.0

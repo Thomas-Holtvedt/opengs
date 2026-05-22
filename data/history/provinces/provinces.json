@@ -7696,8 +7696,8 @@
 		"province_owner": "SWE"
 	},
 	"PRV005072": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV005073": {
 		"province_controller": "SWE",
@@ -7716,8 +7716,8 @@
 		"province_owner": "SWE"
 	},
 	"PRV005077": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV005078": {
 		"province_controller": "SWE",
@@ -7736,12 +7736,12 @@
 		"province_owner": "SWE"
 	},
 	"PRV005082": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV005083": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV005084": {
 		"province_controller": "SWE",
@@ -7764,16 +7764,16 @@
 		"province_owner": "SWE"
 	},
 	"PRV005089": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV005090": {
 		"province_controller": "SWE",
 		"province_owner": "SWE"
 	},
 	"PRV005091": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV005092": {
 		"province_controller": "SOV",
@@ -22952,8 +22952,8 @@
 		"province_owner": "NNN"
 	},
 	"PRV008886": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008887": {
 		"province_controller": "NNN",
@@ -22984,8 +22984,8 @@
 		"province_owner": "NNN"
 	},
 	"PRV008894": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008895": {
 		"province_controller": "NNN",
@@ -23052,16 +23052,16 @@
 		"province_owner": "NNN"
 	},
 	"PRV008911": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008912": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008913": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008914": {
 		"province_controller": "NNN",
@@ -23084,20 +23084,20 @@
 		"province_owner": "NNN"
 	},
 	"PRV008919": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008920": {
 		"province_controller": "NNN",
 		"province_owner": "NNN"
 	},
 	"PRV008921": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008922": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008923": {
 		"province_controller": "NNN",
@@ -23108,8 +23108,8 @@
 		"province_owner": "NNN"
 	},
 	"PRV008925": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008926": {
 		"province_controller": "NNN",
@@ -23128,8 +23128,8 @@
 		"province_owner": "NNN"
 	},
 	"PRV008930": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008931": {
 		"province_controller": "NNN",
@@ -23140,24 +23140,24 @@
 		"province_owner": "NNN"
 	},
 	"PRV008933": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008934": {
 		"province_controller": "NNN",
 		"province_owner": "NNN"
 	},
 	"PRV008935": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008936": {
 		"province_controller": "NNN",
 		"province_owner": "NNN"
 	},
 	"PRV008937": {
-		"province_controller": "NNN",
-		"province_owner": "NNN"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV008938": {
 		"province_controller": "NNN",
@@ -54236,16 +54236,16 @@
 		"province_owner": "SWE"
 	},
 	"PRV016707": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV016708": {
 		"province_controller": "SWE",
 		"province_owner": "SWE"
 	},
 	"PRV016709": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV016710": {
 		"province_controller": "SWE",
@@ -54264,12 +54264,12 @@
 		"province_owner": "SWE"
 	},
 	"PRV016714": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV016715": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV016716": {
 		"province_controller": "SWE",
@@ -54288,8 +54288,8 @@
 		"province_owner": "SWE"
 	},
 	"PRV016720": {
-		"province_controller": "SWE",
-		"province_owner": "SWE"
+		"province_controller": "NOR",
+		"province_owner": "NOR"
 	},
 	"PRV016721": {
 		"province_controller": "SWE",

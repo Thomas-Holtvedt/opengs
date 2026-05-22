@@ -1,11 +1,14 @@
 [gd_scene format=3 uid="uid://uwfcduh1f75g"]
 
 [ext_resource type="Script" uid="uid://b6tm5j21ut3yo" path="res://editor/editor.gd" id="1_ycap1"]
+[ext_resource type="Script" uid="uid://c7ooxwjkucjrj" path="res://core/utils/coordination_controller.gd" id="2_3meo8"]
 [ext_resource type="PackedScene" uid="uid://bw5bx75nyr0ua" path="res://map/map.tscn" id="2_fjngd"]
 [ext_resource type="PackedScene" uid="uid://c3qoli5ipe8qr" path="res://editor/controller/controller.tscn" id="3_er7c6"]
 [ext_resource type="PackedScene" uid="uid://fhm3x6nwgara" path="res://editor/ui/province_editor.tscn" id="4_j82do"]
 [ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="5_6j37k"]
 [ext_resource type="AudioStream" uid="uid://bhbweuth6d8xt" path="res://assets/audio/Open_World_-_Happiness_Full.WAV" id="6_6hpnh"]
+[ext_resource type="Script" uid="uid://0c5055txr5p4" path="res://editor/selection_controller.gd" id="7_selctrl"]
+[ext_resource type="Script" uid="uid://ddojyyvgp6dp6" path="res://editor/province_mutator.gd" id="8_mutator"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_6hpnh"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -23,6 +26,9 @@ glow_enabled = true
 [node name="Editor" type="Node3D" unique_id=1733269734]
 script = ExtResource("1_ycap1")
 
+[node name="CoordinationController" type="Node" parent="." unique_id=1622432065]
+script = ExtResource("2_3meo8")
+
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=739399223]
 environment = SubResource("Environment_aws7q")
 
@@ -33,8 +39,14 @@ shadow_enabled = true
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.24263763, -1.5258789e-05, 0.0027389526)
 
-[node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
+[node name="CameraControllerEditor" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
 camera_zoom_acceleration_speed_factor = 0.75
+
+[node name="SelectionController" type="Node" parent="." unique_id=1906052590]
+script = ExtResource("7_selctrl")
+
+[node name="ProvinceMutator" type="Node" parent="." unique_id=1906052591]
+script = ExtResource("8_mutator")
 
 [node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
 
@@ -43,7 +55,9 @@ camera_zoom_acceleration_speed_factor = 0.75
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=547669375]
 stream = ExtResource("6_6hpnh")
 
-[connection signal="province_selected" from="Controller" to="." method="_on_controller_province_selected"]
+[connection signal="far_map" from="CameraControllerEditor" to="." method="_on_camera_controller_far_map"]
+[connection signal="province_selected" from="CameraControllerEditor" to="." method="_on_camera_controller_province_selected"]
+[connection signal="selection_changed" from="SelectionController" to="." method="_on_selection_changed"]
 [connection signal="change_controller" from="ProvinceEditor" to="." method="_on_province_editor_change_controller"]
 [connection signal="change_controller_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_controller_territory"]
 [connection signal="change_owner" from="ProvinceEditor" to="." method="_on_province_editor_change_owner"]

@@ -1,7 +1,14 @@
 extends StaticBody3D
+class_name Map
+
+const SELECTION_PULSE_BASELINE: float = 1.0
+const SELECTION_PULSE_PEAK: float = 6.0
+const SELECTION_PULSE_HALF_PERIOD: float = 0.2
 
 @onready var map_sprite: Sprite2D = $MeshInstance3D/SubViewport/Sprite2D
 @onready var map_material_2d: ShaderMaterial = $MeshInstance3D/SubViewport/Sprite2D.material
+@onready var map_material_3d: ShaderMaterial = $MeshInstance3D.mesh.material
+@onready var map_mesh: MeshInstance3D = $MeshInstance3D
 
 var current_map_mode: MapMode
 var current_highlight: MapHighlight
@@ -9,8 +16,16 @@ var all_map_modes: Dictionary[int, MapMode]
 var province_image: Image
 var province_image_offset: Vector2i
 var tex_gen: MapTextureGenerator
+var _selection_pulse_tween: Tween = null
 
-
+func deactivate_height() -> void:
+	map_material_3d.set_shader_parameter("height_scale", 0.0)
+	%CountryLabels3D.show()
+	
+func activate_height() -> void:
+	map_material_3d.set_shader_parameter("height_scale", 3.0)
+	%CountryLabels3D.hide()
+	
 func create_map_textures(db: Database) -> void:
 	province_image = map_sprite.texture.get_image()
 	@warning_ignore("integer_division")
@@ -43,6 +58,17 @@ func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
 	)
 
 
+func pulse_selection(pulse_count: int = 3) -> void:
+	if _selection_pulse_tween != null and _selection_pulse_tween.is_running():
+		_selection_pulse_tween.kill()
+	var set_thickness: Callable = func(v: float) -> void:
+		map_material_2d.set_shader_parameter("selection_thickness", v)
+	_selection_pulse_tween = create_tween()
+	_selection_pulse_tween.set_loops(pulse_count)
+	_selection_pulse_tween.tween_method(set_thickness, SELECTION_PULSE_BASELINE, SELECTION_PULSE_PEAK, SELECTION_PULSE_HALF_PERIOD)
+	_selection_pulse_tween.tween_method(set_thickness, SELECTION_PULSE_PEAK, SELECTION_PULSE_BASELINE, SELECTION_PULSE_HALF_PERIOD)
+
+
 func create_map_modes(db: Database) -> void:
 	for map_mode in MapMode.Type:
 		all_map_modes[MapMode.Type[map_mode]] = MapMode.new(db.province_color_to_lookup, db.color_to_province, MapMode.Type[map_mode])
@@ -52,17 +78,25 @@ func create_map_modes(db: Database) -> void:
 
 func create_country_labels(db: Database) -> void:
 	var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
+	var country_label_3d_scene: PackedScene = preload("res://map/country_label_3d.tscn")
 	for country: Country in db.tag_to_country.values():
 		var country_label: CountryLabel = country_label_scene.instantiate()
 		country_label.initial_data(country)
 		%CountryLabels.add_child(country_label)
 		country_label.update_data(country)
 
+		var label_3d: CountryLabel3D = country_label_3d_scene.instantiate()
+		label_3d.initial_data(country)
+		%CountryLabels3D.add_child(label_3d)
+		label_3d.update_data(country)
+
 
 func update_country_label(country: Country) -> void:
 	if country != null:
 		var label: CountryLabel = %CountryLabels.get_node(country.tag)
 		label.update_data(country)
+		var label_3d: CountryLabel3D = %CountryLabels3D.get_node(country.tag)
+		label_3d.update_data(country)
 
 
 func update_map() -> void:

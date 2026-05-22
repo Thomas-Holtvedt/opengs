@@ -14,6 +14,16 @@ uniform bool apply_country_fade = false;
 uniform float country_fade_inwards: hint_range(0.0, 128.0) = 48.0;
 // How far the band fades into unowned area (ocean / no-owner pixels, where the lookup hits no map-mode color).
 uniform float country_fade_outwards: hint_range(0.0, 128.0) = 48.0;
+// Country SDF is generated at lower resolution; encoded offsets are in ds-texel units and
+// get rescaled here so country_fade_* stay expressed in full-res pixels. Must match
+// MapTextureGenerator.COUNTRY_SDF_SCALE.
+uniform float country_sdf_scale: hint_range(1.0, 16.0) = 4.0;
+// Scalar distance is encoded in the SDF's B channel as `dist / COUNTRY_SDF_DIST_MAX` (in
+// ds-texel units). Reading this scalar instead of `length(offset)` avoids the medial-axis
+// cancellation: linearly filtering opposing offset vectors collapses to ~zero length, which
+// the old code interpreted as "on a border" and produced a bright line down the middle of
+// big country interiors. Must match DIST_NORM_MAX in jfa_encode.glsl.
+const float COUNTRY_SDF_DIST_MAX = 128.0;
 
 // Convert integer pixel coordinates to texel-center UV for pixel-perfect sampling
 vec2 cm_uv(int px, int py, ivec2 cm_size) {
@@ -59,8 +69,7 @@ void fragment() {
 	// 3D terrain show through. Owned vs unowned pixels use independent fade distances.
 	float final_alpha = 1.0;
 	if (apply_country_fade) {
-		vec2 country_offset = texture(country_sdf_image, UV).rg * 255.0 - 128.0;
-		float country_dist = length(country_offset);
+		float country_dist = texture(country_sdf_image, UV).b * COUNTRY_SDF_DIST_MAX * country_sdf_scale;
 		bool is_owned = length(map_mode_primary.rgb) > 0.01;
 		float fade_dist = is_owned ? country_fade_inwards : country_fade_outwards;
 		final_alpha = fade_dist <= 0.0 ? 0.0 : 1.0 - smoothstep(0.0, fade_dist, country_dist);

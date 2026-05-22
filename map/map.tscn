@@ -2,30 +2,12 @@
 
 [ext_resource type="Script" uid="uid://c7aii77k7h0xg" path="res://map/map.gd" id="1_a0dt8"]
 [ext_resource type="Texture2D" uid="uid://cm52ilk0klnp" path="res://map/map_data/provinces.png" id="1_hgrid"]
-[ext_resource type="Shader" uid="uid://etl1fouj3y0j" path="res://map/map_shaders/map3d.gdshader" id="2_4hjbm"]
-[ext_resource type="Texture2D" uid="uid://d3vp8kji11mh3" path="res://map/map_data/height.png" id="3_5jdw0"]
-[ext_resource type="Texture2D" uid="uid://b25f0j7j8gqai" path="res://map/map_data/normal.png" id="3_kffv2"]
+[ext_resource type="Material" uid="uid://ljxuoohs1eu" path="res://map/map_shaders/map3D.tres" id="2_lgq1i"]
 [ext_resource type="Material" uid="uid://b62uxcw6bw4d6" path="res://map/map_shaders/map2D.tres" id="3_lgq1i"]
-[ext_resource type="Texture2D" uid="uid://c2awdr8xkjr6h" path="res://map/map_data/ne2.png" id="4_7lyie"]
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_lgq1i"]
-viewport_path = NodePath("MeshInstance3D/SubViewport")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_lgq1i"]
-resource_local_to_scene = true
-render_priority = 0
-shader = ExtResource("2_4hjbm")
-shader_parameter/terrain_image = ExtResource("4_7lyie")
-shader_parameter/subview_image = SubResource("ViewportTexture_lgq1i")
-shader_parameter/normalmap_image = ExtResource("3_kffv2")
-shader_parameter/heightmap_image = ExtResource("3_5jdw0")
-shader_parameter/terrain_saturation = 1.4000000665
-shader_parameter/height_scale = 3.0
-shader_parameter/normal_strength = 1.0
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_hgrid"]
 resource_local_to_scene = true
-material = SubResource("ShaderMaterial_lgq1i")
+material = ExtResource("2_lgq1i")
 size = Vector2(500, 250)
 subdivide_width = 1999
 subdivide_depth = 999
@@ -54,3 +36,6 @@ unique_name_in_owner = true
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1334136468]
 shape = SubResource("BoxShape3D_hgrid")
+
+[node name="CountryLabels3D" type="Node3D" parent="." unique_id=2018909440]
+unique_name_in_owner = true
