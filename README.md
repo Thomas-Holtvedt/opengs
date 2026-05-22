@@ -20,5 +20,8 @@ The creation is documented on the [YouTube Tutorial Series](https://www.youtube.
 ## Tools and resources
 [Map resources Google Drive](https://drive.google.com/drive/folders/1Wn_HeBmMHy_Kt2FIOBzQ3cn3ouTiGyt6?usp=sharing)
 
+## Discord 
+Follow and/or support the project on [OpenGS Discord Server](https://discord.gg/6pRc9f6g6S)
+
 ## Delivered and maintained by 
 <img width="350" height="350" alt="gsi-logo" src="https://github.com/user-attachments/assets/e7210566-7997-4d82-845e-48f249d439a0" />
