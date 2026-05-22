@@ -1,0 +1,78 @@
+[gd_scene format=3 uid="uid://5arm34pep1aj"]
+
+[ext_resource type="Script" uid="uid://dy7yspjdjilx6" path="res://game/ui/province_selected.gd" id="1_fdlfc"]
+
+[node name="ProvinceSelected" type="CanvasLayer" unique_id=2014797835]
+script = ExtResource("1_fdlfc")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1896711961]
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -38.0
+offset_right = 300.0
+offset_bottom = 39.0
+grow_vertical = 2
+
+[node name="GridContainer" type="GridContainer" parent="PanelContainer" unique_id=792026099]
+layout_mode = 2
+columns = 2
+
+[node name="Label" type="Label" parent="PanelContainer/GridContainer" unique_id=694395286]
+layout_mode = 2
+text = "Province Id: "
+
+[node name="LabelProvinceID" type="Label" parent="PanelContainer/GridContainer" unique_id=1581062141]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="PanelContainer/GridContainer" unique_id=1969555593]
+layout_mode = 2
+text = "Province Color"
+
+[node name="ColorPickerProvinceColor" type="ColorPickerButton" parent="PanelContainer/GridContainer" unique_id=250182218]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = false
+button_mask = 0
+
+[node name="Label5" type="Label" parent="PanelContainer/GridContainer" unique_id=310362574]
+layout_mode = 2
+text = "Province Type"
+
+[node name="LabelProvinceType" type="Label" parent="PanelContainer/GridContainer" unique_id=771030992]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/GridContainer" unique_id=705611881]
+layout_mode = 2
+text = "Owner"
+
+[node name="LabelOwner" type="Label" parent="PanelContainer/GridContainer" unique_id=1092114094]
+layout_mode = 2
+
+[node name="Label6" type="Label" parent="PanelContainer/GridContainer" unique_id=1768102181]
+layout_mode = 2
+text = "Controller"
+
+[node name="LabelController" type="Label" parent="PanelContainer/GridContainer" unique_id=2064501455]
+layout_mode = 2
+
+[node name="Label4" type="Label" parent="PanelContainer/GridContainer" unique_id=1611732156]
+layout_mode = 2
+text = "Territory"
+
+[node name="LabelTerritory" type="Label" parent="PanelContainer/GridContainer" unique_id=169118372]
+layout_mode = 2
+
+[node name="Label8" type="Label" parent="PanelContainer/GridContainer" unique_id=979693573]
+layout_mode = 2
+text = "Position"
+
+[node name="LabelPosition" type="Label" parent="PanelContainer/GridContainer" unique_id=1915011695]
+layout_mode = 2
+
+[node name="Label7" type="Label" parent="PanelContainer/GridContainer" unique_id=889182224]
+layout_mode = 2
+text = "Terrain Type"
+
+[node name="LabelTerrain" type="Label" parent="PanelContainer/GridContainer" unique_id=1814099509]
+layout_mode = 2

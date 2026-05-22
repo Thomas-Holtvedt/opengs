@@ -1,0 +1,48 @@
+[gd_scene format=3 uid="uid://cdy1220h7wcq3"]
+
+[ext_resource type="Script" uid="uid://bqe2tqpcx0bn0" path="res://core/ui/map_modes.gd" id="1_n3hpf"]
+
+[node name="MapModes" type="CanvasLayer" unique_id=206583246]
+script = ExtResource("1_n3hpf")
+enable_political = null
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=1021118655]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -147.0
+offset_top = -31.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="GridContainer" type="GridContainer" parent="PanelContainer" unique_id=721062873]
+layout_mode = 2
+columns = 2
+
+[node name="ButtonPolitical" type="Button" parent="PanelContainer/GridContainer" unique_id=1991872789]
+layout_mode = 2
+text = "Political"
+
+[node name="ButtonIdeology" type="Button" parent="PanelContainer/GridContainer" unique_id=710751532]
+layout_mode = 2
+text = "Ideology"
+
+[node name="ButtonProvince" type="Button" parent="PanelContainer/GridContainer" unique_id=345196524]
+layout_mode = 2
+text = "Province"
+
+[node name="ButtonTerritory" type="Button" parent="PanelContainer/GridContainer" unique_id=-200444118]
+layout_mode = 2
+text = "Territory"
+
+[node name="ButtonTerrain" type="Button" parent="PanelContainer/GridContainer" unique_id=1113086124]
+layout_mode = 2
+text = "Terrain"
+
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonPolitical" to="." method="_on_button_political_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonIdeology" to="." method="_on_button_ideology_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonProvince" to="." method="_on_button_province_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonTerritory" to="." method="_on_button_territory_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonTerrain" to="." method="_on_button_terrain_button_up"]

@@ -1,108 +1,148 @@
 extends StaticBody3D
+class_name Map
 
-@onready var province_color_to_lookup : Dictionary
-@onready var map_material_2d = load("res://map/shaders/map2D.tres")
-@onready var color_map_political:Image = Image.create(256,256,false,Image.FORMAT_RGB8)
-@onready var color_map_ideology:Image = Image.create(256,256,false,Image.FORMAT_RGB8)
+const SELECTION_PULSE_BASELINE: float = 1.0
+const SELECTION_PULSE_PEAK: float = 6.0
+const SELECTION_PULSE_HALF_PERIOD: float = 0.2
 
-var current_map_mode:Image
-var color_map_texture:ImageTexture
+@onready var map_sprite: Sprite2D = $MeshInstance3D/SubViewport/Sprite2D
+@onready var map_material_2d: ShaderMaterial = $MeshInstance3D/SubViewport/Sprite2D.material
+@onready var map_material_3d: ShaderMaterial = $MeshInstance3D.mesh.material
+@onready var map_mesh: MeshInstance3D = $MeshInstance3D
 
-var previously_selected_provinces :PackedColorArray
+var current_map_mode: MapMode
+var current_highlight: MapHighlight
+var all_map_modes: Dictionary[int, MapMode]
+var province_image: Image
+var province_image_offset: Vector2i
+var tex_gen: MapTextureGenerator
+var _selection_pulse_tween: Tween = null
 
-enum MapMode {POLITICAL, IDEOLOGY}
-
-func _ready() -> void:
-	create_lookup_texture()
-	create_color_map()
-	set_map_mode_political()
-	create_country_labels()
+func deactivate_height() -> void:
+	map_material_3d.set_shader_parameter("height_scale", 0.0)
+	%CountryLabels3D.show()
 	
-func create_lookup_texture() -> void:
-	var province_image : Image = get_parent().province_map.get_image()
-	var lookup_image: Image = province_image.duplicate()
-	var color_map_r : int = 0
-	var color_map_g : int = 0
+func activate_height() -> void:
+	map_material_3d.set_shader_parameter("height_scale", 3.0)
+	%CountryLabels3D.hide()
 	
-	for x in range(lookup_image.get_width()):
-		for y in range(lookup_image.get_height()):
-			var province_color : Color = province_image.get_pixel(x,y)
-			if not province_color_to_lookup.has(province_color):
-				province_color_to_lookup[province_color] = Color(color_map_r/255.0, color_map_g/255.0, 0.0)
-				color_map_r += 1
-				if color_map_r == 256:
-					color_map_r = 0
-					color_map_g += 1
-			lookup_image.set_pixel(x,y,province_color_to_lookup[province_color])
-	var lookup_texture = ImageTexture.create_from_image(lookup_image)
-	map_material_2d.set_shader_parameter("lookup_image", lookup_texture)
-	
-func create_color_map() -> void:
-	for province_color :Color in province_color_to_lookup:
-		var lookup = province_color_to_lookup[province_color]
-		var x = lookup.r * 255
-		var y = lookup.g * 255
-		var province:Province = get_parent().get_node("Provinces").color_to_province.get(province_color)
-		if province.type == "land":
-			var owner_color :Color = province.province_owner.color
-			var controller_color :Color = province.province_controller.color
-			color_map_political.set_pixel(x,y,owner_color)
-			color_map_political.set_pixel(x,y+100,controller_color)
-			var owner_ideology_color :Color = province.province_owner.ideology_color
-			var controller_ideology_color :Color = province.province_controller.ideology_color
-			color_map_ideology.set_pixel(x,y,owner_ideology_color)
-			color_map_ideology.set_pixel(x,y+100,controller_ideology_color)
-
-func update_color_map(input_color:Color, output_color:Color, offset:int) -> void:
-	var lookup = province_color_to_lookup.get(input_color,null)
-	if lookup:
-		var x = lookup.r * 255
-		var y = lookup.g * 255
-		color_map_political.set_pixel(x,y+offset,output_color)
-		color_map_ideology.set_pixel(x,y+offset,output_color)
-		current_map_mode.set_pixel(x,y+offset,output_color)
-	
-	
-func update_map_shader() -> void:
-	color_map_texture = ImageTexture.create_from_image(current_map_mode)
-	map_material_2d.set_shader_parameter("color_map_image",color_map_texture)
-
-func set_map_mode_political() -> void:
-	current_map_mode = color_map_political
-	update_map_shader()
-	
-func set_map_mode_ideology() -> void:
-	current_map_mode = color_map_ideology
-	update_map_shader()
-	
-func highlight_province(selected_province) -> void:
-	deselect_provinces()
-	if selected_province.type == "land":
-		for province in selected_province.get_parent().get_children():
-			update_color_map(province.color, Color("WHITE"), 200)
-			previously_selected_provinces.append(province.color)
-			
-	update_color_map(selected_province.color, Color("Green"), 200)
-	update_map_shader()
-	previously_selected_provinces.append(selected_province.color)
-	
-func deselect_provinces() -> void:
-	for color in previously_selected_provinces:
-		update_color_map(color, Color("BLACK"), 200)
-	previously_selected_provinces.clear()
+func create_map_textures(db: Database) -> void:
+	province_image = map_sprite.texture.get_image()
+	@warning_ignore("integer_division")
+	province_image_offset = Vector2i(province_image.get_width() / 2, province_image.get_height() / 2)
+	tex_gen = MapTextureGenerator.new(province_image)
+	tex_gen.create_map_textures(db)
+	tex_gen.set_map_textures(map_material_2d)
 
 
-func _on_map_modes_map_mode_selected(mode: Variant) -> void:
-	match mode:
-		MapMode.POLITICAL:
-			set_map_mode_political()
-		MapMode.IDEOLOGY:
-			set_map_mode_ideology()
+func update_map_texture(province: Province, db: Database, refresh: bool = true) -> void:
+	tex_gen.update_map_texture(db, province.center, province.bounding_box, refresh)
 
-func create_country_labels() -> void:
-	var country_label_template: PackedScene = load("res://map/country_label_template.tscn")
-	for country: Country in Globals.tag_to_country.values():
-		var country_label = country_label_template.instantiate()
+
+func refresh_territory_sdf() -> void:
+	tex_gen.refresh_territory_sdf()
+
+
+func update_country_borders(province: Province, db: Database, refresh: bool = true) -> void:
+	tex_gen.update_country_borders(db, province.center, province.bounding_box, refresh)
+
+
+func refresh_country_sdf() -> void:
+	tex_gen.refresh_country_sdf()
+
+
+func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
+	return province_image.get_pixel(
+		int(mouse_pos.x * 10) + province_image_offset.x,
+		int(mouse_pos.y * 10) + province_image_offset.y,
+	)
+
+
+func pulse_selection(pulse_count: int = 3) -> void:
+	if _selection_pulse_tween != null and _selection_pulse_tween.is_running():
+		_selection_pulse_tween.kill()
+	var set_thickness: Callable = func(v: float) -> void:
+		map_material_2d.set_shader_parameter("selection_thickness", v)
+	_selection_pulse_tween = create_tween()
+	_selection_pulse_tween.set_loops(pulse_count)
+	_selection_pulse_tween.tween_method(set_thickness, SELECTION_PULSE_BASELINE, SELECTION_PULSE_PEAK, SELECTION_PULSE_HALF_PERIOD)
+	_selection_pulse_tween.tween_method(set_thickness, SELECTION_PULSE_PEAK, SELECTION_PULSE_BASELINE, SELECTION_PULSE_HALF_PERIOD)
+
+
+func create_map_modes(db: Database) -> void:
+	for map_mode in MapMode.Type:
+		all_map_modes[MapMode.Type[map_mode]] = MapMode.new(db.province_color_to_lookup, db.color_to_province, MapMode.Type[map_mode])
+	current_map_mode = all_map_modes[0]
+	update_map()
+
+
+func create_country_labels(db: Database) -> void:
+	var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
+	var country_label_3d_scene: PackedScene = preload("res://map/country_label_3d.tscn")
+	for country: Country in db.tag_to_country.values():
+		var country_label: CountryLabel = country_label_scene.instantiate()
 		country_label.initial_data(country)
-		$MeshInstance3D/SubViewport2/CountryLabels.add_child(country_label)
+		%CountryLabels.add_child(country_label)
 		country_label.update_data(country)
+
+		var label_3d: CountryLabel3D = country_label_3d_scene.instantiate()
+		label_3d.initial_data(country)
+		%CountryLabels3D.add_child(label_3d)
+		label_3d.update_data(country)
+
+
+func update_country_label(country: Country) -> void:
+	if country != null:
+		var label: CountryLabel = %CountryLabels.get_node(country.tag)
+		label.update_data(country)
+		var label_3d: CountryLabel3D = %CountryLabels3D.get_node(country.tag)
+		label_3d.update_data(country)
+
+
+func update_map() -> void:
+	map_material_2d.set_shader_parameter("color_map_image", current_map_mode)
+	var apply_fade: bool = current_map_mode.type == MapMode.Type.POLITICAL or current_map_mode.type == MapMode.Type.IDEOLOGY
+	map_material_2d.set_shader_parameter("apply_country_fade", apply_fade)
+
+
+func set_map_mode(map_mode: MapMode.Type) -> void:
+	if current_highlight != null:
+		current_map_mode = current_highlight.remove_highlights(current_map_mode)
+	current_map_mode = all_map_modes[map_mode]
+	if current_highlight != null:
+		current_map_mode = current_highlight.apply_highlights(current_map_mode)
+	update_map()
+
+
+func update_map_modes(province: Province, commit: bool = true) -> void:
+	for mm in all_map_modes.values():
+		mm.update_province(province)
+		if commit:
+			mm.commit()
+
+
+func commit_map_modes() -> void:
+	for mm in all_map_modes.values():
+		mm.commit()
+
+
+func highlight_province(province: Province):
+	highlight_provinces([province])
+
+
+func highlight_provinces(provinces: Array[Province]):
+	if current_highlight != null:
+		current_map_mode = current_highlight.remove_highlights(current_map_mode)
+	current_highlight = MapHighlight.new(provinces)
+	current_map_mode = current_highlight.apply_highlights(current_map_mode)
+	update_map()
+
+
+func get_preview_images(): # remove in PROD, just for visuals in editor
+	map_material_2d.get_shader_parameter("lookup_image").get_image().save_png("res://map/map_data/lut_preview.png")
+	map_material_2d.get_shader_parameter("province_border_image").get_image().save_png("res://map/map_data/bt_preview.png")
+	map_material_2d.get_shader_parameter("territory_border_image").get_image().save_png("res://map/map_data/tbt_preview.png")
+	tex_gen.province_sdf_texture.get_image().save_png("res://map/map_data/sdf_preview.png")
+	tex_gen.territory_sdf_texture.get_image().save_png("res://map/map_data/territory_sdf_preview.png")
+	tex_gen.country_sdf_texture.get_image().save_png("res://map/map_data/country_sdf_preview.png")
+	current_map_mode.get_image().save_png("res://map/map_data/cmap_preview.png")

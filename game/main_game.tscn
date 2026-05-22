@@ -1,0 +1,41 @@
+[gd_scene format=3 uid="uid://brtj1cxo2025q"]
+
+[ext_resource type="Script" uid="uid://h51uhrlkk2y" path="res://game/main_game.gd" id="1_3fham"]
+[ext_resource type="PackedScene" uid="uid://bw5bx75nyr0ua" path="res://map/map.tscn" id="2_7of5j"]
+[ext_resource type="PackedScene" uid="uid://c8ptbx1watnwc" path="res://game/player/player.tscn" id="3_g4axw"]
+[ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="4_t4f2l"]
+[ext_resource type="PackedScene" uid="uid://5arm34pep1aj" path="res://game/ui/province_selected.tscn" id="5_433cb"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_g4axw"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_t4f2l"]
+sky_material = SubResource("ProceduralSkyMaterial_g4axw")
+
+[sub_resource type="Environment" id="Environment_433cb"]
+background_mode = 2
+sky = SubResource("Sky_t4f2l")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="MainGame" type="Node3D" unique_id=1520215509]
+script = ExtResource("1_3fham")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1095832700]
+environment = SubResource("Environment_433cb")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=688417540]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Map" parent="." unique_id=1275119641 instance=ExtResource("2_7of5j")]
+
+[node name="Player" parent="." unique_id=841221442 instance=ExtResource("3_g4axw")]
+
+[node name="MapModes" parent="." unique_id=206583246 instance=ExtResource("4_t4f2l")]
+
+[node name="ProvinceSelected" parent="." unique_id=2014797835 instance=ExtResource("5_433cb")]
+
+[connection signal="province_selected" from="Player" to="." method="_on_player_province_selected"]
+[connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]

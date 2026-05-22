@@ -1,8 +1,0 @@
-[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://b62uxcw6bw4d6"]
-
-[ext_resource type="Shader" uid="uid://btphu3wypjt2g" path="res://map/shaders/map2d.gdshader" id="1_jwm1v"]
-[ext_resource type="Texture2D" uid="uid://d174hxgwn5ac2" path="res://map/map_data/TerrainMap.png" id="2_7ik5h"]
-
-[resource]
-shader = ExtResource("1_jwm1v")
-shader_parameter/terrain_image = ExtResource("2_7ik5h")
