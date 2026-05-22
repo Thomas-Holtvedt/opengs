@@ -8,8 +8,11 @@ The project is covered by the MIT licence, and thus is free for anyone to use fo
 - Selectable provinces
 - Toggleable map modes
 - Map in 3D environment
-- Smooth borders
+- Dynamic Smooth borders (SDF borders calculated w JFA)
 - Dynamic country name labels
+- 3D environment from Heigthmap and Normal map
+- Editable Provinces through ingame editor
+
 
 ## Showcase
 
