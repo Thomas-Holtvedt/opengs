@@ -33,3 +33,4 @@ func set_territory(new_territory: Territory):
 		territory.provinces.erase(self)
 	territory = new_territory
 	territory.provinces.append(self)
+	

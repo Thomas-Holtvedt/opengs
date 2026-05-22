@@ -4,6 +4,26 @@ uniform sampler2D lookup_image: source_color, filter_nearest;
 uniform sampler2D color_map_image: source_color, filter_nearest;
 uniform sampler2D province_border_image: source_color, filter_nearest;
 uniform sampler2D territory_border_image: source_color, filter_nearest;
+uniform sampler2D province_sdf_image: filter_linear;
+uniform sampler2D territory_sdf_image: filter_linear;
+uniform sampler2D country_sdf_image: filter_linear;
+
+uniform float selection_thickness: hint_range(0.0, 16.0) = 2.0;
+uniform bool apply_country_fade = false;
+// How far the band fades into the country's own territory (where the pixel has an owner color).
+uniform float country_fade_inwards: hint_range(0.0, 128.0) = 48.0;
+// How far the band fades into unowned area (ocean / no-owner pixels, where the lookup hits no map-mode color).
+uniform float country_fade_outwards: hint_range(0.0, 128.0) = 48.0;
+// Country SDF is generated at lower resolution; encoded offsets are in ds-texel units and
+// get rescaled here so country_fade_* stay expressed in full-res pixels. Must match
+// MapTextureGenerator.COUNTRY_SDF_SCALE.
+uniform float country_sdf_scale: hint_range(1.0, 16.0) = 4.0;
+// Scalar distance is encoded in the SDF's B channel as `dist / COUNTRY_SDF_DIST_MAX` (in
+// ds-texel units). Reading this scalar instead of `length(offset)` avoids the medial-axis
+// cancellation: linearly filtering opposing offset vectors collapses to ~zero length, which
+// the old code interpreted as "on a border" and produced a bright line down the middle of
+// big country interiors. Must match DIST_NORM_MAX in jfa_encode.glsl.
+const float COUNTRY_SDF_DIST_MAX = 128.0;
 
 // Convert integer pixel coordinates to texel-center UV for pixel-perfect sampling
 vec2 cm_uv(int px, int py, ivec2 cm_size) {
@@ -29,7 +49,6 @@ void fragment() {
 	// Textures
 	vec3 lookup_texture = texture(lookup_image, UV).rgb;
 	vec3 province_border_texture = texture(province_border_image, UV).rgb;
-	vec3 territory_border_texture = texture(territory_border_image, UV).rgb;
 
 	// Integer lookup coordinates for pixel-perfect color map sampling
 	ivec2 lut = lut_coords(lookup_texture);
@@ -43,19 +62,31 @@ void fragment() {
 
 	// Darken province borders
 	float is_border = 1.0 - province_border_texture.r;
-	float is_territory_border = 1.0 - territory_border_texture.r;
 	final_color.rgb = mix(final_color.rgb, final_color.rgb * 0.85, is_border);
 
-	// Selection edge highlighting (green = selected province, white = its territory)
-	if (length(selected_color.rgb) > 0.01) {
-		bool is_province_hl = selected_color.r < 0.9;
-		if (!is_province_hl && is_territory_border > 0.01) {
-			final_color = vec4(1.0);
-		}
-		if (is_province_hl && is_border > 0.01) {
-			final_color = selected_color;
-		}
+	// Country fade: in political-style modes, the owner color is only fully opaque near
+	// country borders and fades to transparent toward the country interior, letting the
+	// 3D terrain show through. Owned vs unowned pixels use independent fade distances.
+	float final_alpha = 1.0;
+	if (apply_country_fade) {
+		float country_dist = texture(country_sdf_image, UV).b * COUNTRY_SDF_DIST_MAX * country_sdf_scale;
+		bool is_owned = length(map_mode_primary.rgb) > 0.01;
+		float fade_dist = is_owned ? country_fade_inwards : country_fade_outwards;
+		final_alpha = fade_dist <= 0.0 ? 0.0 : 1.0 - smoothstep(0.0, fade_dist, country_dist);
 	}
 
-	COLOR = final_color;
+	// Selection edge highlighting (green = selected province, white = its territory).
+	// Always fully opaque so the ring stays visible even where the country has faded out.
+	if (length(selected_color.rgb) > 0.01) {
+		bool is_province_hl = selected_color.r < 0.9;
+		vec2 sdf_offset = is_province_hl
+			? texture(province_sdf_image, UV).rg * 255.0 - 128.0
+			: texture(territory_sdf_image, UV).rg * 255.0 - 128.0;
+		float border_dist = length(sdf_offset);
+		float sel_alpha = 1.0 - smoothstep(selection_thickness - 0.5, selection_thickness + 0.5, border_dist);
+		final_color.rgb = mix(final_color.rgb, selected_color.rgb, sel_alpha);
+		final_alpha = max(final_alpha, sel_alpha);
+	}
+
+	COLOR = vec4(final_color.rgb, final_alpha);
 }

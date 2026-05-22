@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dxa1ckj4lqp7y"]
+
+[ext_resource type="Script" path="res://map/country_label_3d.gd" id="1_421nt"]
+[ext_resource type="FontFile" uid="uid://b4nrulwhvroyp" path="res://assets/fonts/IMPRISHA.TTF" id="3_ibshd"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_lopfl"]
+resource_local_to_scene = true
+font = ExtResource("3_ibshd")
+font_size = 24
+outline_size = 2
+outline_color = Color(0, 0, 0, 1)
+
+[node name="CountryLabel3DTemplate" type="Node3D"]
+script = ExtResource("1_421nt")
+label_settings = SubResource("LabelSettings_lopfl")

@@ -1,6 +1,8 @@
 extends Node3D
 class_name CameraController
 
+signal far_map(is_far: bool)
+
 # Nodes
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
@@ -40,6 +42,14 @@ class_name CameraController
 @export var camera_zoom_velocity_half_life: float = 0.15
 @export var camera_zoom_min_bound: float = 10.0
 @export var camera_zoom_max_bound: float = 1000.0
+@export var camera_zoom_threshold: float = 50.0
+
+@export_category("Camera Move-To Settings")
+@export var camera_move_to_speed: float = 200.0
+@export var camera_move_to_transition: Tween.TransitionType = Tween.TRANS_SINE
+@export var camera_move_to_ease: Tween.EaseType = Tween.EASE_OUT
+
+
 
 # Control Variables
 class CameraTranslationCalculator extends PVACalculator: # Base class for camera movement and panning
@@ -179,6 +189,7 @@ class ZoomCalculator extends PVACalculator:
 	func on_input_event(event: InputEvent) -> void:
 		if event.is_action_pressed("camera_zoom_in"):
 			self.frame_acceleration -= 1
+
 		elif  event.is_action_pressed("camera_zoom_out"):
 			self.frame_acceleration += 1
 		if event is InputEventMagnifyGesture:
@@ -271,6 +282,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera_move.on_input_event(event)
 	if camera_can_zoom:
 		camera_zoom.on_input_event(event)
+		if camera.position.z <= camera_zoom_threshold:
+			far_map.emit(false)
+		else:
+			far_map.emit(true)
+			
 	if camera_can_rotate_by_mouse_offset:
 		camera_rotate_mouse.on_input_event(event)
 	if camera_can_rotate_by_keys:
@@ -296,3 +312,18 @@ func shoot_ray(event: InputEvent) -> void:
 @warning_ignore("unused_parameter")
 func _on_province_click(world_pos: Vector2, event: InputEvent) -> void:
 	pass
+
+
+var _move_to_tween: Tween = null
+
+func move_to(target: Vector2, multiplier: float = 1.0) -> void:
+	if _move_to_tween != null and _move_to_tween.is_running():
+		_move_to_tween.kill()
+	var destination: Vector3 = Vector3(target.x, global_position.y, target.y)
+	var distance: float = global_position.distance_to(destination)
+	var speed: float = camera_move_to_speed * multiplier
+	var duration: float = distance / speed if speed > 0.0 else 0.0
+	_move_to_tween = create_tween()
+	_move_to_tween.set_trans(camera_move_to_transition)
+	_move_to_tween.set_ease(camera_move_to_ease)
+	_move_to_tween.tween_property(self, "global_position", destination, duration)

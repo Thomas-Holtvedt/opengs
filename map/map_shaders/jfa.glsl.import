@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://wwnotq01q10"
+path="res://.godot/imported/jfa.glsl-051820783f0a7a25d0b62ff8e70e3176.res"
+
+[deps]
+
+source_file="res://map/map_shaders/jfa.glsl"
+dest_files=["res://.godot/imported/jfa.glsl-051820783f0a7a25d0b62ff8e70e3176.res"]
+
+[params]
+

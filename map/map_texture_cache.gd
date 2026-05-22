@@ -5,6 +5,10 @@ const CACHE_DIR: String = "user://map_cache"
 const LOOKUP_FILE: String = "lookup_texture.png"
 const BORDER_FILE: String = "border_texture.png"
 const TERRITORY_BORDER_FILE: String = "territory_border_texture.png"
+const COUNTRY_BORDER_FILE: String = "country_border_texture.png"
+const PROVINCE_SDF_FILE: String = "province_sdf_texture.png"
+const TERRITORY_SDF_FILE: String = "territory_sdf_texture.png"
+const COUNTRY_SDF_FILE: String = "country_sdf_texture_4x_dist.png"
 const COLOR_MAP_FILE: String = "province_color_to_lookup.data"
 
 var cache_id: String
@@ -16,6 +20,10 @@ func _init(src_data: PackedByteArray) -> void:
 	available = FileAccess.file_exists(_cache_path(LOOKUP_FILE)) \
 			and FileAccess.file_exists(_cache_path(BORDER_FILE)) \
 			and FileAccess.file_exists(_cache_path(TERRITORY_BORDER_FILE)) \
+			and FileAccess.file_exists(_cache_path(COUNTRY_BORDER_FILE)) \
+			and FileAccess.file_exists(_cache_path(PROVINCE_SDF_FILE)) \
+			and FileAccess.file_exists(_cache_path(TERRITORY_SDF_FILE)) \
+			and FileAccess.file_exists(_cache_path(COUNTRY_SDF_FILE)) \
 			and FileAccess.file_exists(_cache_path(COLOR_MAP_FILE))
 
 
@@ -31,17 +39,37 @@ func load_territory_border() -> Image:
 	return _load_image(TERRITORY_BORDER_FILE, Image.FORMAT_L8)
 
 
+func load_country_border() -> Image:
+	return _load_image(COUNTRY_BORDER_FILE, Image.FORMAT_L8)
+
+
+func load_province_sdf() -> Image:
+	return _load_image(PROVINCE_SDF_FILE, Image.FORMAT_RGBA8)
+
+
+func load_territory_sdf() -> Image:
+	return _load_image(TERRITORY_SDF_FILE, Image.FORMAT_RGBA8)
+
+
+func load_country_sdf() -> Image:
+	return _load_image(COUNTRY_SDF_FILE, Image.FORMAT_RGBA8)
+
+
 func load_color_map(db: Database) -> void:
 	var f: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.READ)
 	db.province_color_to_lookup = str_to_var(f.get_as_text())
 	f.close()
 
 
-func save(lookup_image: Image, border_image: Image, territory_border_image: Image, db: Database) -> void:
+func save(lookup_image: Image, border_image: Image, territory_border_image: Image, country_border_image: Image, province_sdf_image: Image, territory_sdf_image: Image, country_sdf_image: Image, db: Database) -> void:
 	DirAccess.make_dir_recursive_absolute(CACHE_DIR + "/" + cache_id)
 	lookup_image.save_png(_cache_path(LOOKUP_FILE))
 	border_image.save_png(_cache_path(BORDER_FILE))
 	territory_border_image.save_png(_cache_path(TERRITORY_BORDER_FILE))
+	country_border_image.save_png(_cache_path(COUNTRY_BORDER_FILE))
+	province_sdf_image.save_png(_cache_path(PROVINCE_SDF_FILE))
+	territory_sdf_image.save_png(_cache_path(TERRITORY_SDF_FILE))
+	country_sdf_image.save_png(_cache_path(COUNTRY_SDF_FILE))
 	var f: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
 	f.store_string(var_to_str(db.province_color_to_lookup))
 	f.close()
