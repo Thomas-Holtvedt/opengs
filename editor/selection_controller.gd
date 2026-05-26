@@ -26,3 +26,4 @@ func select(province: Province, additive: bool, map: Map) -> void:
 		selected_provinces = [province]
 	map.highlight_provinces(selected_provinces)
 	selection_changed.emit(selected_provinces)
+	

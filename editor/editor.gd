@@ -10,6 +10,8 @@ var db: Database = Database.new()
 @onready var mutator: ProvinceMutator = $ProvinceMutator
 @onready var province_editor: CanvasLayer = $ProvinceEditor
 
+var is_setting_province_center: bool = false
+
 
 func _ready() -> void:
 	DataImporter.new(db)
@@ -23,6 +25,17 @@ func _ready() -> void:
 
 
 func _on_camera_controller_province_selected(world_pos: Vector2, additive: bool) -> void:
+	if is_setting_province_center:
+		is_setting_province_center = false
+		var color: Color = map.get_pixel_lookup_color(world_pos)
+		var clicked: Province = db.color_to_province[color]
+		if not selection.selected_provinces.is_empty() and clicked == selection.selected_provinces[0]:
+			clicked.center = Vector2i(
+				int(world_pos.x * 10) + map.province_image_offset.x,
+				int(world_pos.y * 10) + map.province_image_offset.y,
+			)
+			province_editor.update_labels(clicked)
+			return
 	selection.select_at(world_pos, additive, self.map, self.db)
 
 
@@ -73,3 +86,7 @@ func _on_camera_controller_far_map(is_far: bool) -> void:
 		$Map.deactivate_height()
 	else:
 		$Map.activate_height()
+
+
+func _on_province_editor_is_setting_center() -> void:
+	is_setting_province_center = true
