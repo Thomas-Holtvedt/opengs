@@ -9,9 +9,9 @@ script = ExtResource("1_yb7ut")
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_top = -38.0
+offset_top = -146.0
 offset_right = 300.0
-offset_bottom = 39.0
+offset_bottom = 147.0
 grow_vertical = 2
 
 [node name="GridContainer" type="GridContainer" parent="PanelContainer" unique_id=1085986008]
@@ -77,7 +77,7 @@ layout_mode = 2
 
 [node name="Label8" type="Label" parent="PanelContainer/GridContainer" unique_id=727817862]
 layout_mode = 2
-text = "Position"
+text = "Center"
 
 [node name="LabelPosition" type="Label" parent="PanelContainer/GridContainer" unique_id=968576644]
 layout_mode = 2
@@ -91,7 +91,11 @@ layout_mode = 2
 
 [node name="ButtonGenPRV" type="Button" parent="PanelContainer/GridContainer" unique_id=1900475102]
 layout_mode = 2
-text = "Generate Province History"
+text = "Save Province"
+
+[node name="ButtonSetCenter" type="Button" parent="PanelContainer/GridContainer" unique_id=2116077372]
+layout_mode = 2
+text = "Set Center"
 
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceType" to="." method="_on_ob_province_type_item_selected"]
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceOwner" to="." method="_on_ob_province_owner_item_selected"]
@@ -101,3 +105,4 @@ text = "Generate Province History"
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBTerritory" to="." method="_on_ob_territory_item_selected"]
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceTerrain" to="." method="_on_ob_province_terrain_item_selected"]
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonGenPRV" to="." method="_on_button_gen_prv_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonSetCenter" to="." method="_on_button_set_center_button_up"]

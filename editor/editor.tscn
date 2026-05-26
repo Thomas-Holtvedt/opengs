@@ -66,4 +66,5 @@ stream = ExtResource("6_6hpnh")
 [connection signal="change_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_territory"]
 [connection signal="change_type" from="ProvinceEditor" to="." method="_on_province_editor_change_type"]
 [connection signal="export_requested" from="ProvinceEditor" to="." method="_on_province_editor_export_requested"]
+[connection signal="is_setting_center" from="ProvinceEditor" to="." method="_on_province_editor_is_setting_center"]
 [connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]

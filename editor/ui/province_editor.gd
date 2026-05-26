@@ -28,6 +28,8 @@ var country_order_rev: Dictionary[String, int]
 
 var territory_id_list: Dictionary[int, String]
 var territory_id_list_rev: Dictionary[String, int]
+
+signal is_setting_center
 	
 
 func populate_buttons() -> void:
@@ -120,3 +122,10 @@ func _on_ob_territory_controller_item_selected(index: int) -> void:
 # SAVE BUTTON
 func _on_button_gen_prv_button_up() -> void:
 	export_requested.emit()
+
+
+
+
+
+func _on_button_set_center_button_up() -> void:
+	is_setting_center.emit()
