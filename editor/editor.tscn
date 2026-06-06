@@ -4,11 +4,12 @@
 [ext_resource type="Script" uid="uid://c7ooxwjkucjrj" path="res://core/utils/coordination_controller.gd" id="2_3meo8"]
 [ext_resource type="PackedScene" uid="uid://bw5bx75nyr0ua" path="res://map/map.tscn" id="2_fjngd"]
 [ext_resource type="PackedScene" uid="uid://c3qoli5ipe8qr" path="res://editor/controller/controller.tscn" id="3_er7c6"]
-[ext_resource type="PackedScene" uid="uid://fhm3x6nwgara" path="res://editor/ui/province_editor.tscn" id="4_j82do"]
 [ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="5_6j37k"]
 [ext_resource type="AudioStream" uid="uid://bhbweuth6d8xt" path="res://assets/audio/Open_World_-_Happiness_Full.WAV" id="6_6hpnh"]
 [ext_resource type="Script" uid="uid://0c5055txr5p4" path="res://editor/selection_controller.gd" id="7_selctrl"]
 [ext_resource type="Script" uid="uid://ddojyyvgp6dp6" path="res://editor/province_mutator.gd" id="8_mutator"]
+[ext_resource type="PackedScene" path="res://editor/ui/ui_editor.tscn" id="8_yyul4"]
+[ext_resource type="Script" uid="uid://oj7am0x5w5wn" path="res://editor/country_mutator.gd" id="9_cmutator"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_6hpnh"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -48,7 +49,10 @@ script = ExtResource("7_selctrl")
 [node name="ProvinceMutator" type="Node" parent="." unique_id=1906052591]
 script = ExtResource("8_mutator")
 
-[node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
+[node name="CountryMutator" type="Node" parent="." unique_id=1906052592]
+script = ExtResource("9_cmutator")
+
+[node name="UIEditor" parent="." unique_id=1907813086 instance=ExtResource("8_yyul4")]
 
 [node name="MapModes" parent="." unique_id=206583246 instance=ExtResource("5_6j37k")]
 
@@ -58,13 +62,4 @@ stream = ExtResource("6_6hpnh")
 [connection signal="far_map" from="CameraControllerEditor" to="." method="_on_camera_controller_far_map"]
 [connection signal="province_selected" from="CameraControllerEditor" to="." method="_on_camera_controller_province_selected"]
 [connection signal="selection_changed" from="SelectionController" to="." method="_on_selection_changed"]
-[connection signal="change_controller" from="ProvinceEditor" to="." method="_on_province_editor_change_controller"]
-[connection signal="change_controller_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_controller_territory"]
-[connection signal="change_owner" from="ProvinceEditor" to="." method="_on_province_editor_change_owner"]
-[connection signal="change_owner_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_owner_territory"]
-[connection signal="change_terrain" from="ProvinceEditor" to="." method="_on_province_editor_change_terrain"]
-[connection signal="change_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_territory"]
-[connection signal="change_type" from="ProvinceEditor" to="." method="_on_province_editor_change_type"]
-[connection signal="export_requested" from="ProvinceEditor" to="." method="_on_province_editor_export_requested"]
-[connection signal="is_setting_center" from="ProvinceEditor" to="." method="_on_province_editor_is_setting_center"]
 [connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]

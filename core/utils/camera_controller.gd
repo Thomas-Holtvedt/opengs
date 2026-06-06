@@ -71,22 +71,11 @@ class CameraTranslationCalculator extends PVACalculator: # Base class for camera
 
 # Camera Movement
 class MovementCalculator extends CameraTranslationCalculator:
-	var touchpad_frame_acc:Vector2 = Vector2.ZERO
-
-	@warning_ignore("unused_parameter")
-	func on_input_event(event: InputEvent) -> void:
-		pass # TODO: test if this works (no touchpad action registers as this on windows)
-		#if event is InputEventPanGesture:
-		#	self.touchpad_frame_acc = event.delta
-
 	func get_final_frame_acceleration() -> Vector3:
 		if Input.is_action_pressed("camera_move_forward"): self.frame_acceleration -= global.transform.basis.z
 		if Input.is_action_pressed("camera_move_backward"): self.frame_acceleration += global.transform.basis.z
 		if Input.is_action_pressed("camera_move_right"): self.frame_acceleration += global.transform.basis.x
 		if Input.is_action_pressed("camera_move_left"): self.frame_acceleration -= global.transform.basis.x
-		#self.frame_acceleration.x += self.touchpad_frame_acc.x # Disabled for now, couldn't be tested
-		#self.frame_acceleration.z += self.touchpad_frame_acc.y
-		self.touchpad_frame_acc = Vector2.ZERO # Reset touchpad movement each frame
 		self.frame_acceleration = self.frame_acceleration.normalized()
 		return self.frame_acceleration
 
@@ -259,20 +248,27 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if !camera_can_process: return
 
-	if camera_can_move:
+	var text_focused: bool = _is_text_input_focused()
+
+	if camera_can_move and not text_focused:
 		camera_move.process(delta)
 	if camera_can_zoom:
 		camera_zoom.process(delta)
 	if camera_can_rotate_by_mouse_offset:
 		camera_rotate_mouse.process(delta)
-	if camera_can_rotate_by_keys:
+	if camera_can_rotate_by_keys and not text_focused:
 		camera_rotate_keys.process(delta)
 	if camera_can_automatic_pan:
 		camera_automatic_pan.process(delta)
 
 
+func _is_text_input_focused() -> bool:
+	var focus_owner: Control = get_viewport().gui_get_focus_owner()
+	return focus_owner is LineEdit or focus_owner is TextEdit
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if Input.is_action_pressed("Exit"):
+	if event.is_action_pressed("Exit"):
 		get_tree().quit()
 
 	if event.is_action_pressed("province_select"):

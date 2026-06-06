@@ -9,6 +9,5 @@ extends Node
 
 func select_and_show(target: Province):
 	selection.select(target, false, map)
-	#camera.move_to((target.center - Vector2i(2500, 1250)) * 0.1)
 	camera.move_to((target.center - Vector2i(map.map_mesh.size)) * 0.5)
 	map.pulse_selection(10)

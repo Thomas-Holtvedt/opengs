@@ -1,6 +1,8 @@
 extends RefCounted
-class_name PVACalculator 
+class_name PVACalculator
 # Dataclass to calculate an acceleration, velocity and position system
+
+const NLOG2: float = -0.6931471805599453  # -ln(2), used by half-life dampening
 
 # Variant refers to a float or a vector here
 # Constant
@@ -67,10 +69,9 @@ func on_input_event(event: InputEvent) -> void:
 
 
 # Helpers (Variant means float or vector)
-var __NLOG2 = - log(2)
-func _dampen_with_half_life(delta:float) -> Variant: # TODO: migrate to helper
+func _dampen_with_half_life(delta: float) -> Variant:
 	if velocity_half_life == 0: return 0 # Fully reset velocity if half_life is 0
-	return exp(__NLOG2 * delta / velocity_half_life)
+	return exp(NLOG2 * delta / velocity_half_life)
 
 func _clamp_value(value:Variant) -> Variant:
 	if value is float:

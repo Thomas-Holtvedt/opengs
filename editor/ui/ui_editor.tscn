@@ -1,0 +1,185 @@
+[gd_scene format=3 uid="uid://fhm3x6nwgara"]
+
+[ext_resource type="Script" path="res://editor/ui/ui_editor.gd" id="1_uied0"]
+[ext_resource type="Script" uid="uid://b23vkoymyk6tq" path="res://editor/ui/province_editor.gd" id="2_prved"]
+[ext_resource type="Script" uid="uid://cw5oajsg7r6yw" path="res://editor/ui/country_editor.gd" id="3_ctry0"]
+
+[node name="UIEditor" type="CanvasLayer" unique_id=1907813086]
+script = ExtResource("1_uied0")
+
+[node name="TabBar" type="TabBar" parent="." unique_id=1525133828]
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+current_tab = 0
+tab_count = 2
+tab_0/title = "Provinces"
+tab_1/title = "Countries"
+
+[node name="ProvinceEditor" type="PanelContainer" parent="." unique_id=9685244]
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 31.0
+offset_right = 244.0
+grow_vertical = 2
+script = ExtResource("2_prved")
+
+[node name="GridContainer" type="GridContainer" parent="ProvinceEditor" unique_id=1085986008]
+layout_mode = 2
+columns = 2
+
+[node name="Label" type="Label" parent="ProvinceEditor/GridContainer" unique_id=1036054035]
+layout_mode = 2
+text = "Province Id: "
+
+[node name="LabelProvinceID" type="Label" parent="ProvinceEditor/GridContainer" unique_id=355504476]
+layout_mode = 2
+
+[node name="Label3" type="Label" parent="ProvinceEditor/GridContainer" unique_id=1795303336]
+layout_mode = 2
+text = "Province Color"
+
+[node name="ColorPickerProvinceColor" type="ColorPickerButton" parent="ProvinceEditor/GridContainer" unique_id=80764928]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LabelProvinceType" type="Label" parent="ProvinceEditor/GridContainer" unique_id=30630323]
+layout_mode = 2
+text = "Province Type"
+
+[node name="OBProvinceType" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=1769255039]
+layout_mode = 2
+
+[node name="LabelProvinceOwner" type="Label" parent="ProvinceEditor/GridContainer" unique_id=914180718]
+layout_mode = 2
+text = "Owner"
+
+[node name="OBProvinceOwner" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=1615870089]
+layout_mode = 2
+
+[node name="LabelProvinceController" type="Label" parent="ProvinceEditor/GridContainer" unique_id=1524076642]
+layout_mode = 2
+text = "Controller"
+
+[node name="OBProvinceController" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=2067000131]
+layout_mode = 2
+
+[node name="LabelTerritoryOwner" type="Label" parent="ProvinceEditor/GridContainer" unique_id=1693257800]
+layout_mode = 2
+text = "Territory Owner"
+
+[node name="OBTerritoryOwner" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=246299723]
+layout_mode = 2
+
+[node name="LabelTerritoryController" type="Label" parent="ProvinceEditor/GridContainer" unique_id=1768499235]
+layout_mode = 2
+text = "Territory Controller"
+
+[node name="OBTerritoryController" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=603762964]
+layout_mode = 2
+
+[node name="LabelTerritory" type="Label" parent="ProvinceEditor/GridContainer" unique_id=2146071504]
+layout_mode = 2
+text = "Territory"
+
+[node name="OBTerritory" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=477750683]
+layout_mode = 2
+
+[node name="Label8" type="Label" parent="ProvinceEditor/GridContainer" unique_id=727817862]
+layout_mode = 2
+text = "Center"
+
+[node name="LabelPosition" type="Label" parent="ProvinceEditor/GridContainer" unique_id=968576644]
+layout_mode = 2
+
+[node name="LabelTerrain" type="Label" parent="ProvinceEditor/GridContainer" unique_id=906052535]
+layout_mode = 2
+text = "Terrain"
+
+[node name="OBProvinceTerrain" type="OptionButton" parent="ProvinceEditor/GridContainer" unique_id=1334201509]
+layout_mode = 2
+
+[node name="ButtonGenPRV" type="Button" parent="ProvinceEditor/GridContainer" unique_id=1900475102]
+layout_mode = 2
+text = "Save Province"
+
+[node name="ButtonSetCenter" type="Button" parent="ProvinceEditor/GridContainer" unique_id=2116077372]
+layout_mode = 2
+text = "Set Center"
+
+[node name="CountryEditor" type="PanelContainer" parent="." unique_id=1824347142]
+visible = false
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 31.0
+offset_right = 244.0
+grow_vertical = 2
+script = ExtResource("3_ctry0")
+
+[node name="GridContainer" type="GridContainer" parent="CountryEditor" unique_id=850000001]
+layout_mode = 2
+columns = 2
+
+[node name="LabelCountrySelect" type="Label" parent="CountryEditor/GridContainer" unique_id=850000004]
+layout_mode = 2
+text = "Country"
+
+[node name="OBCountrySelect" type="OptionButton" parent="CountryEditor/GridContainer" unique_id=850000005]
+layout_mode = 2
+
+[node name="LabelTag" type="Label" parent="CountryEditor/GridContainer" unique_id=850000006]
+layout_mode = 2
+text = "Tag"
+
+[node name="LineEditTag" type="LineEdit" parent="CountryEditor/GridContainer" unique_id=850000007]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LabelBaseName" type="Label" parent="CountryEditor/GridContainer" unique_id=850000008]
+layout_mode = 2
+text = "Base Name"
+
+[node name="LineEditBaseName" type="LineEdit" parent="CountryEditor/GridContainer" unique_id=850000009]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LabelMapColor" type="Label" parent="CountryEditor/GridContainer" unique_id=850000010]
+layout_mode = 2
+text = "Map Color"
+
+[node name="ColorPickerMapColor" type="ColorPickerButton" parent="CountryEditor/GridContainer" unique_id=850000011]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LabelIdeology" type="Label" parent="CountryEditor/GridContainer" unique_id=850000012]
+layout_mode = 2
+text = "Ideology"
+
+[node name="OBIdeology" type="OptionButton" parent="CountryEditor/GridContainer" unique_id=850000013]
+layout_mode = 2
+
+[node name="ButtonCreateCountry" type="Button" parent="CountryEditor/GridContainer" unique_id=850000015]
+layout_mode = 2
+text = "Create Country"
+
+[node name="ButtonSaveCountries" type="Button" parent="CountryEditor/GridContainer" unique_id=850000014]
+layout_mode = 2
+text = "Save Countries"
+
+[connection signal="tab_changed" from="TabBar" to="." method="_on_tab_bar_tab_changed"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBProvinceType" to="ProvinceEditor" method="_on_ob_province_type_item_selected"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBProvinceOwner" to="ProvinceEditor" method="_on_ob_province_owner_item_selected"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBProvinceController" to="ProvinceEditor" method="_on_ob_province_controller_item_selected"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBTerritoryOwner" to="ProvinceEditor" method="_on_ob_territory_owner_item_selected"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBTerritoryController" to="ProvinceEditor" method="_on_ob_territory_controller_item_selected"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBTerritory" to="ProvinceEditor" method="_on_ob_territory_item_selected"]
+[connection signal="item_selected" from="ProvinceEditor/GridContainer/OBProvinceTerrain" to="ProvinceEditor" method="_on_ob_province_terrain_item_selected"]
+[connection signal="button_up" from="ProvinceEditor/GridContainer/ButtonGenPRV" to="ProvinceEditor" method="_on_button_gen_prv_button_up"]
+[connection signal="button_up" from="ProvinceEditor/GridContainer/ButtonSetCenter" to="ProvinceEditor" method="_on_button_set_center_button_up"]
+[connection signal="item_selected" from="CountryEditor/GridContainer/OBCountrySelect" to="CountryEditor" method="_on_ob_country_select_item_selected"]
+[connection signal="text_changed" from="CountryEditor/GridContainer/LineEditTag" to="CountryEditor" method="_on_line_edit_tag_text_changed"]
+[connection signal="text_changed" from="CountryEditor/GridContainer/LineEditBaseName" to="CountryEditor" method="_on_line_edit_base_name_text_changed"]
+[connection signal="color_changed" from="CountryEditor/GridContainer/ColorPickerMapColor" to="CountryEditor" method="_on_color_picker_map_color_color_changed"]
+[connection signal="item_selected" from="CountryEditor/GridContainer/OBIdeology" to="CountryEditor" method="_on_ob_ideology_item_selected"]
+[connection signal="button_up" from="CountryEditor/GridContainer/ButtonSaveCountries" to="CountryEditor" method="_on_button_save_countries_button_up"]
+[connection signal="button_up" from="CountryEditor/GridContainer/ButtonCreateCountry" to="CountryEditor" method="_on_button_create_country_button_up"]

@@ -1,5 +1,9 @@
 {
-	"map_color": [0.5, 0.5, 0.5],
+	"base_name": "No name nation",
 	"ideology": "DEMOCRACY",
-	"base_name": "No name nation"
+	"map_color": [
+		0.5,
+		0.5,
+		0.5
+	]
 }

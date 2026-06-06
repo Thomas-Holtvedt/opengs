@@ -20,8 +20,11 @@ func import_history(db: Database) -> void:
 		var country: Country = db.tag_to_country[tag]
 
 		if data.has("map_color"):
-			var c = data["map_color"]
-			country.map_color = Color(c[0], c[1], c[2])
+			var c: Array = data["map_color"]
+			if c.size() >= 3:
+				country.map_color = Color(c[0], c[1], c[2])
+			else:
+				push_warning("Invalid map_color for country %s, expected 3 components, got %d" % [tag, c.size()])
 
 		if data.has("base_name"):
 			country.base_name = data["base_name"]

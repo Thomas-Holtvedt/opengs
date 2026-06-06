@@ -22,6 +22,7 @@ func initial_data(country: Country) -> void:
 
 
 func update_data(country: Country) -> void:
+	country_name = country.base_name
 	for child in get_children():
 		child.queue_free()
 

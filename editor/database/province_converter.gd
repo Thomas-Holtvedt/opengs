@@ -6,14 +6,14 @@ var definition_data: Array = []
 
 func _init(province: Province) -> void:
 	if province.type == Province.Type.LAND:
-		if province.province_owner.tag != null:
+		if province.province_owner != null:
 			history_data["province_owner"] = province.province_owner.tag
 		else:
 			history_data["province_owner"] = "NNN"
-		if province.province_controller.tag != null:
+		if province.province_controller != null:
 			history_data["province_controller"] = province.province_controller.tag
 		else:
-			history_data["province_conrtoller"] = "NNN"
+			history_data["province_controller"] = "NNN"
 	definition_data.append(province.id)
 	definition_data.append(Province.Type.keys()[province.type].to_lower())
 	definition_data.append(int(province.color.r*255))

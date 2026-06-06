@@ -1,16 +1,17 @@
-extends CanvasLayer
+extends PanelContainer
+class_name ProvinceEditor
 
-@onready var province_id = $PanelContainer/GridContainer/LabelProvinceID
-@onready var province_color = $PanelContainer/GridContainer/ColorPickerProvinceColor
-@onready var province_type = $PanelContainer/GridContainer/OBProvinceType
-@onready var province_terrain = $PanelContainer/GridContainer/OBProvinceTerrain
-@onready var province_owner = $PanelContainer/GridContainer/OBProvinceOwner
-@onready var province_controller = $PanelContainer/GridContainer/OBProvinceController
-@onready var territory_owner = $PanelContainer/GridContainer/OBTerritoryOwner
-@onready var territory_controller = $PanelContainer/GridContainer/OBTerritoryController
-@onready var province_territory = $PanelContainer/GridContainer/OBTerritory
+@onready var id_label: Label = $GridContainer/LabelProvinceID
+@onready var color_picker: ColorPickerButton = $GridContainer/ColorPickerProvinceColor
+@onready var type_dropdown: OptionButton = $GridContainer/OBProvinceType
+@onready var terrain_dropdown: OptionButton = $GridContainer/OBProvinceTerrain
+@onready var owner_dropdown: OptionButton = $GridContainer/OBProvinceOwner
+@onready var controller_dropdown: OptionButton = $GridContainer/OBProvinceController
+@onready var territory_owner_dropdown: OptionButton = $GridContainer/OBTerritoryOwner
+@onready var territory_controller_dropdown: OptionButton = $GridContainer/OBTerritoryController
+@onready var territory_dropdown: OptionButton = $GridContainer/OBTerritory
 
-@onready var province_center = $PanelContainer/GridContainer/LabelPosition
+@onready var center_label: Label = $GridContainer/LabelPosition
 
 signal change_type(index: int)
 signal change_terrain(index: int)
@@ -20,111 +21,120 @@ signal change_owner_territory(new_owner: Country)
 signal change_controller_territory(controller: Country)
 signal change_territory(new_territory: Territory)
 signal export_requested
+signal is_setting_center
 
 var database: Database
 
-var country_order: Dictionary[int, String]
-var country_order_rev: Dictionary[String, int]
+var index_to_tag: Dictionary[int, String]
+var tag_to_index: Dictionary[String, int]
 
-var territory_id_list: Dictionary[int, String]
-var territory_id_list_rev: Dictionary[String, int]
+var index_to_territory_id: Dictionary[int, String]
+var territory_id_to_index: Dictionary[String, int]
 
-signal is_setting_center
-	
 
 func populate_buttons() -> void:
 	populate_type_button()
 	populate_terrain_button()
 	populate_owner_button()
-	populate_territory_button() 
+	populate_territory_button()
 
-func update_labels(province: Province):
-	province_id.text  = str(province.id)
-	province_color.color = province.color
-	province_type.select(province.type)
-	province_terrain.select(province.terrain)
-	territory_owner.select(-1)
-	territory_controller.select(-1)
-	province_center.text = str(province.center)
-	province_territory.text = str(province.territory.id)
-	province_territory.select(territory_id_list_rev[province.territory.id])
+
+func show_province(province: Province):
+	id_label.text  = str(province.id)
+	color_picker.color = province.color
+	type_dropdown.select(province.type)
+	terrain_dropdown.select(province.terrain)
+	territory_owner_dropdown.select(-1)
+	territory_controller_dropdown.select(-1)
+	center_label.text = str(province.center)
+	territory_dropdown.select(territory_id_to_index[province.territory.id])
 	if province.type == Province.Type.LAND:
-		province_owner.select(country_order_rev[province.province_owner.tag])
-		province_controller.select(country_order_rev[province.province_controller.tag])
+		owner_dropdown.select(tag_to_index[province.province_owner.tag])
+		controller_dropdown.select(tag_to_index[province.province_controller.tag])
 	else:
-		province_owner.select(-1)
-		province_controller.select(-1)
-		
+		owner_dropdown.select(-1)
+		controller_dropdown.select(-1)
 
 
 func populate_territory_button() -> void:
 	var i: int = 0
-	for tit in database.id_to_territory:
-		province_territory.add_item(tit)
-		territory_id_list[i] = tit
-		territory_id_list_rev[tit] = i
+	for tid in database.id_to_territory:
+		territory_dropdown.add_item(tid)
+		index_to_territory_id[i] = tid
+		territory_id_to_index[tid] = i
 		i += 1
-		
+
 
 func populate_type_button() -> void:
 	for type in Province.Type:
-		province_type.add_item(type)
+		type_dropdown.add_item(type)
+
 
 func populate_terrain_button() -> void:
 	for terrain in Province.Terrain:
-		province_terrain.add_item(terrain)
+		terrain_dropdown.add_item(terrain)
+
+
+func refresh_country_buttons() -> void:
+	owner_dropdown.clear()
+	controller_dropdown.clear()
+	territory_owner_dropdown.clear()
+	territory_controller_dropdown.clear()
+	index_to_tag.clear()
+	tag_to_index.clear()
+	populate_owner_button()
+
 
 func populate_owner_button() -> void:
 	var i: int = 0
 	for tag in database.tag_to_country:
-		province_owner.add_item(tag)
-		province_controller.add_item(tag)
-		territory_owner.add_item(tag)
-		territory_controller.add_item(tag)
-		country_order[i] = tag
-		country_order_rev[tag] = i
+		owner_dropdown.add_item(tag)
+		controller_dropdown.add_item(tag)
+		territory_owner_dropdown.add_item(tag)
+		territory_controller_dropdown.add_item(tag)
+		index_to_tag[i] = tag
+		tag_to_index[tag] = i
 		i += 1
 
 
 # BUTTONS
 
 func _on_ob_territory_item_selected(index: int) -> void:
-	var new_territory: Territory = database.id_to_territory[territory_id_list[index]]
+	var new_territory: Territory = database.id_to_territory[index_to_territory_id[index]]
 	change_territory.emit(new_territory)
-	
+
+
 func _on_ob_province_type_item_selected(index: int) -> void:
 	change_type.emit(index)
-	
+
+
 func _on_ob_province_terrain_item_selected(index: int) -> void:
 	change_terrain.emit(index)
 
 
 func _on_ob_province_owner_item_selected(index: int) -> void:
-	var new_owner: Country = database.tag_to_country[country_order[index]]
+	var new_owner: Country = database.tag_to_country[index_to_tag[index]]
 	change_owner.emit(new_owner)
 
 
 func _on_ob_province_controller_item_selected(index: int) -> void:
-	var new_controller: Country = database.tag_to_country[country_order[index]]
+	var new_controller: Country = database.tag_to_country[index_to_tag[index]]
 	change_controller.emit(new_controller)
 
 
 func _on_ob_territory_owner_item_selected(index: int) -> void:
-	var new_owner: Country = database.tag_to_country[country_order[index]]
+	var new_owner: Country = database.tag_to_country[index_to_tag[index]]
 	change_owner_territory.emit(new_owner)
 
 
 func _on_ob_territory_controller_item_selected(index: int) -> void:
-	var new_controller: Country = database.tag_to_country[country_order[index]]
+	var new_controller: Country = database.tag_to_country[index_to_tag[index]]
 	change_controller_territory.emit(new_controller)
 
 
 # SAVE BUTTON
 func _on_button_gen_prv_button_up() -> void:
 	export_requested.emit()
-
-
-
 
 
 func _on_button_set_center_button_up() -> void:
