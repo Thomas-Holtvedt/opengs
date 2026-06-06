@@ -1,23 +1,26 @@
 extends CanvasLayer
-@onready var province_id = $PanelContainer/GridContainer/LabelProvinceID
-@onready var province_color = $PanelContainer/GridContainer/ColorPickerProvinceColor
-@onready var province_type = $PanelContainer/GridContainer/LabelProvinceType
-@onready var province_owner = $PanelContainer/GridContainer/LabelOwner
-@onready var province_controller = $PanelContainer/GridContainer/LabelController
-@onready var province_territory = $PanelContainer/GridContainer/LabelTerritory
-@onready var province_center = $PanelContainer/GridContainer/LabelPosition
-@onready var province_terrain = $PanelContainer/GridContainer/LabelTerrain
+class_name ProvinceSelected
 
-func update_labels(province: Province):
-	province_id.text  = str(province.id)
-	province_color.color = province.color
-	province_type.text = Province.Type.keys()[province.type]
-	province_terrain.text = Province.Terrain.keys()[province.terrain]
-	province_center.text = str(province.center)
-	province_territory.text = str(province.territory.id)
+@onready var id_label: Label = $PanelContainer/GridContainer/LabelProvinceID
+@onready var color_picker: ColorPickerButton = $PanelContainer/GridContainer/ColorPickerProvinceColor
+@onready var type_label: Label = $PanelContainer/GridContainer/LabelProvinceType
+@onready var owner_label: Label = $PanelContainer/GridContainer/LabelOwner
+@onready var controller_label: Label = $PanelContainer/GridContainer/LabelController
+@onready var territory_label: Label = $PanelContainer/GridContainer/LabelTerritory
+@onready var center_label: Label = $PanelContainer/GridContainer/LabelPosition
+@onready var terrain_label: Label = $PanelContainer/GridContainer/LabelTerrain
+
+
+func show_province(province: Province):
+	id_label.text = str(province.id)
+	color_picker.color = province.color
+	type_label.text = Province.Type.keys()[province.type]
+	terrain_label.text = Province.Terrain.keys()[province.terrain]
+	center_label.text = str(province.center)
+	territory_label.text = str(province.territory.id) if province.territory != null else ""
 	if province.type == Province.Type.LAND:
-		province_owner.text = province.province_owner.tag
-		province_controller.text = province.province_controller.tag	
+		owner_label.text = province.province_owner.tag
+		controller_label.text = province.province_controller.tag
 	else:
-		province_owner.text = ""
-		province_controller.text = ""
+		owner_label.text = ""
+		controller_label.text = ""

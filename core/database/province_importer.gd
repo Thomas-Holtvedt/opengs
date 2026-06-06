@@ -11,7 +11,7 @@ func import_definition(db: Database) -> void:
 			a[0],
 			Province.Type[a[1].to_upper()],
 			Color(a[2].to_float()/255, a[3].to_float()/255, a[4].to_float()/255),
-			Vector2(a[5].to_float(), a[6].to_float()),
+			Vector2i(a[5].to_int(), a[6].to_int()),
 			Province.Terrain[a[7].to_upper()]
 		)
 
@@ -29,6 +29,14 @@ func import_history(db: Database) -> void:
 			if all_data.has(pid):
 				var data: Dictionary = all_data[pid]
 				if data.has("province_owner"):
-					province.province_owner = db.tag_to_country[data["province_owner"]]
+					var owner_tag: String = data["province_owner"]
+					if owner_tag in db.tag_to_country:
+						province.province_owner = db.tag_to_country[owner_tag]
+					else:
+						push_warning("Unknown province_owner '%s' for province %s, falling back to NNN" % [owner_tag, pid])
 				if data.has("province_controller"):
-					province.province_controller = db.tag_to_country[data["province_controller"]]
+					var controller_tag: String = data["province_controller"]
+					if controller_tag in db.tag_to_country:
+						province.province_controller = db.tag_to_country[controller_tag]
+					else:
+						push_warning("Unknown province_controller '%s' for province %s, falling back to NNN" % [controller_tag, pid])

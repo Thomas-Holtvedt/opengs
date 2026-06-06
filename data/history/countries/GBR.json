@@ -1,5 +1,9 @@
 {
-	"map_color": [0.78, 0.0, 0.22],
+	"base_name": "United Kingdom",
 	"ideology": "DEMOCRACY",
-	"base_name": "United Kingdom"
+	"map_color": [
+		0.779999971389771,
+		0.0,
+		0.219999998807907
+	]
 }

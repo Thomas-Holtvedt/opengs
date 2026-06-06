@@ -1,5 +1,9 @@
 {
-	"map_color": [0.95, 0.75, 0.0],
-	"ideology": "DEMOCRACY",
-	"base_name": "Spain"
+	"base_name": "Spain",
+	"ideology": "COMMUNISM",
+	"map_color": [
+		0.949999988079071,
+		0.75,
+		0.0
+	]
 }

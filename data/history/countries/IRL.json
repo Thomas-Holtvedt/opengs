@@ -1,5 +1,9 @@
 {
-	"map_color": [0.0, 0.6, 0.28],
+	"base_name": "Ireland",
 	"ideology": "DEMOCRACY",
-	"base_name": "Ireland"
+	"map_color": [
+		0.0,
+		0.600000023841858,
+		0.280000001192093
+	]
 }

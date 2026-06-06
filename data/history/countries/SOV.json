@@ -1,5 +1,9 @@
 {
-	"map_color": [1, 0, 0],
+	"base_name": "Soviet Union",
 	"ideology": "COMMUNISM",
-	"base_name": "Soviet Union"
+	"map_color": [
+		1.0,
+		0.0,
+		0.0
+	]
 }

@@ -15,6 +15,7 @@ func initial_data(country: Country) -> void:
 
 
 func update_data(country: Country) -> void:
+	$Path2D.text = country.base_name
 	var points: PackedVector2Array = compute_curve_points(country)
 	if points.is_empty():
 		$Path2D.hide()

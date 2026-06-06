@@ -4,11 +4,12 @@ extends Node3D
 
 var db: Database = Database.new()
 
-@onready var map = $Map
+@onready var map: Map = $Map
 @onready var camera: CameraController = $CameraControllerEditor
 @onready var selection: SelectionController = $SelectionController
 @onready var mutator: ProvinceMutator = $ProvinceMutator
-@onready var province_editor: CanvasLayer = $ProvinceEditor
+@onready var country_mutator: CountryMutator = $CountryMutator
+@onready var ui_editor: UIEditor = $UIEditor
 
 var is_setting_province_center: bool = false
 
@@ -20,8 +21,30 @@ func _ready() -> void:
 	map.create_country_labels(db)
 	map.get_preview_images()
 
-	province_editor.database = db
-	province_editor.populate_buttons()
+	ui_editor.database = db
+	ui_editor.populate_buttons()
+	_connect_ui_editor_signals()
+
+
+func _connect_ui_editor_signals() -> void:
+	var pe = ui_editor.province_editor
+	pe.change_owner.connect(_on_province_editor_change_owner)
+	pe.change_controller.connect(_on_province_editor_change_controller)
+	pe.change_owner_territory.connect(_on_province_editor_change_owner_territory)
+	pe.change_controller_territory.connect(_on_province_editor_change_controller_territory)
+	pe.change_type.connect(_on_province_editor_change_type)
+	pe.change_terrain.connect(_on_province_editor_change_terrain)
+	pe.change_territory.connect(_on_province_editor_change_territory)
+	pe.export_requested.connect(_on_province_editor_export_requested)
+	pe.is_setting_center.connect(_on_province_editor_is_setting_center)
+
+	var ce = ui_editor.country_editor
+	ce.change_tag.connect(_on_country_editor_change_tag)
+	ce.change_base_name.connect(_on_country_editor_change_base_name)
+	ce.change_map_color.connect(_on_country_editor_change_map_color)
+	ce.change_ideology.connect(_on_country_editor_change_ideology)
+	ce.export_requested.connect(_on_country_editor_export_requested)
+	ce.create_country_requested.connect(_on_country_editor_create_country_requested)
 
 
 func _on_camera_controller_province_selected(world_pos: Vector2, additive: bool) -> void:
@@ -34,13 +57,13 @@ func _on_camera_controller_province_selected(world_pos: Vector2, additive: bool)
 				int(world_pos.x * 10) + map.province_image_offset.x,
 				int(world_pos.y * 10) + map.province_image_offset.y,
 			)
-			province_editor.update_labels(clicked)
+			ui_editor.show_province(clicked)
 			return
 	selection.select_at(world_pos, additive, self.map, self.db)
 
 
 func _on_selection_changed(provinces: Array[Province]) -> void:
-	province_editor.update_labels(provinces[0])
+	ui_editor.show_province(provinces[0])
 
 
 func _on_province_editor_change_owner(new_owner: Country) -> void:
@@ -90,3 +113,37 @@ func _on_camera_controller_far_map(is_far: bool) -> void:
 
 func _on_province_editor_is_setting_center() -> void:
 	is_setting_province_center = true
+
+
+func _on_country_editor_change_tag(country: Country, new_tag: String) -> void:
+	var old_tag: String = country.tag
+	if country_mutator.set_tag(country, new_tag, db):
+		map.rename_country_label(old_tag, new_tag)
+		ui_editor.refresh_country_buttons()
+
+
+func _on_country_editor_change_base_name(country: Country, new_name: String) -> void:
+	country_mutator.set_base_name(country, new_name, self.map)
+
+
+func _on_country_editor_change_map_color(country: Country, new_color: Color) -> void:
+	country_mutator.set_map_color(country, new_color, self.map)
+
+
+func _on_country_editor_change_ideology(country: Country, index: int) -> void:
+	country_mutator.set_ideology(country, index, self.map)
+
+
+func _on_country_editor_export_requested() -> void:
+	var exporter = CountryExporter.new()
+	exporter.write_definition(db)
+	exporter.write_history(db)
+	for country in db.tag_to_country.values():
+		map.update_country_label(country)
+
+
+func _on_country_editor_create_country_requested() -> void:
+	var new_country: Country = country_mutator.create_country(db)
+	map.create_country_label(new_country)
+	ui_editor.refresh_country_buttons()
+	ui_editor.country_editor.show_country(new_country)

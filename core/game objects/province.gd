@@ -18,10 +18,11 @@ var province_owner: Country:
 		if province_owner != null:
 			province_owner.owned_provinces.erase(self)
 		province_owner = value
-		province_owner.owned_provinces.append(self)
+		if province_owner != null:
+			province_owner.owned_provinces.append(self)
 var province_controller: Country
 
-func _init(province_id: String, province_type: Type, province_color: Color,  province_center: Vector2, province_terrain: Terrain) -> void:
+func _init(province_id: String, province_type: Type, province_color: Color, province_center: Vector2i, province_terrain: Terrain) -> void:
 	self.id = province_id
 	self.color = province_color
 	self.center = province_center

@@ -76,19 +76,32 @@ func create_map_modes(db: Database) -> void:
 	update_map()
 
 
-func create_country_labels(db: Database) -> void:
-	var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
-	var country_label_3d_scene: PackedScene = preload("res://map/country_label_3d.tscn")
-	for country: Country in db.tag_to_country.values():
-		var country_label: CountryLabel = country_label_scene.instantiate()
-		country_label.initial_data(country)
-		%CountryLabels.add_child(country_label)
-		country_label.update_data(country)
+const COUNTRY_LABEL_SCENE: PackedScene = preload("res://map/country_label.tscn")
+const COUNTRY_LABEL_3D_SCENE: PackedScene = preload("res://map/country_label_3d.tscn")
 
-		var label_3d: CountryLabel3D = country_label_3d_scene.instantiate()
-		label_3d.initial_data(country)
-		%CountryLabels3D.add_child(label_3d)
-		label_3d.update_data(country)
+
+func create_country_labels(db: Database) -> void:
+	for country: Country in db.tag_to_country.values():
+		create_country_label(country)
+
+
+func create_country_label(country: Country) -> void:
+	var country_label: CountryLabel = COUNTRY_LABEL_SCENE.instantiate()
+	country_label.initial_data(country)
+	%CountryLabels.add_child(country_label)
+	country_label.update_data(country)
+
+	var label_3d: CountryLabel3D = COUNTRY_LABEL_3D_SCENE.instantiate()
+	label_3d.initial_data(country)
+	%CountryLabels3D.add_child(label_3d)
+	label_3d.update_data(country)
+
+
+func rename_country_label(old_tag: String, new_tag: String) -> void:
+	if %CountryLabels.has_node(old_tag):
+		%CountryLabels.get_node(old_tag).name = new_tag
+	if %CountryLabels3D.has_node(old_tag):
+		%CountryLabels3D.get_node(old_tag).name = new_tag
 
 
 func update_country_label(country: Country) -> void:
@@ -138,7 +151,9 @@ func highlight_provinces(provinces: Array[Province]):
 	update_map()
 
 
-func get_preview_images(): # remove in PROD, just for visuals in editor
+func get_preview_images(): # debug-only: dumps preview PNGs into res:// while running through the editor
+	if not OS.has_feature("editor"):
+		return
 	map_material_2d.get_shader_parameter("lookup_image").get_image().save_png("res://map/map_data/lut_preview.png")
 	map_material_2d.get_shader_parameter("province_border_image").get_image().save_png("res://map/map_data/bt_preview.png")
 	map_material_2d.get_shader_parameter("territory_border_image").get_image().save_png("res://map/map_data/tbt_preview.png")
