@@ -11,7 +11,7 @@ class_name ProvinceSelected
 @onready var terrain_label: Label = $PanelContainer/GridContainer/LabelTerrain
 
 
-func show_province(province: Province):
+func show_province(province: Province) -> void:
 	id_label.text = str(province.id)
 	color_picker.color = province.color
 	type_label.text = Province.Type.keys()[province.type]

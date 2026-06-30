@@ -1,0 +1,28 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://cfrhx3jiymfsj"]
+
+[ext_resource type="Shader" uid="uid://gxsepwhwhv88" path="res://core/shaders/flag_display.gdshader" id="1_m4bra"]
+[ext_resource type="Texture2D" uid="uid://b68adlv54p4ow" path="res://assets/flags/effects/Flag_overlay.png" id="2_o5ruw"]
+
+[resource]
+resource_local_to_scene = true
+shader = ExtResource("1_m4bra")
+shader_parameter/overlay_image = ExtResource("2_o5ruw")
+shader_parameter/overlay_strength = 2.000000095
+shader_parameter/background_color_1 = Color(0, 0, 0, 1)
+shader_parameter/background_color_2 = Color(0, 0, 0, 1)
+shader_parameter/background_color_3 = Color(0, 0, 0, 1)
+shader_parameter/icon_1_color = Color(0, 0, 0, 1)
+shader_parameter/icon_1_offset = Vector2(0, 0)
+shader_parameter/icon_2_color = Color(0, 0, 0, 1)
+shader_parameter/icon_2_offset = Vector2(0, 0)
+shader_parameter/icon_colored_offset = Vector2(0, 0)
+shader_parameter/canton_size = Vector2(0, 0)
+shader_parameter/canton_background_color_1 = Color(0, 0, 0, 1)
+shader_parameter/canton_background_color_2 = Color(0, 0, 0, 1)
+shader_parameter/canton_background_color_3 = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_1_color = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_1_offset = Vector2(0, 0)
+shader_parameter/canton_icon_2_color = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_2_offset = Vector2(0, 0)
+shader_parameter/canton_icon_colored_offset = Vector2(0, 0)
+shader_parameter/blur_amount = 0.003

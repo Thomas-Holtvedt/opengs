@@ -13,24 +13,24 @@ signal change_map_color(country: Country, new_color: Color)
 signal change_ideology(country: Country, index: int)
 signal export_requested
 signal create_country_requested
+signal country_selected(country: Country)
 
 var database: Database
 var selected_country: Country
-
-var index_to_tag: Dictionary[int, String]
-var tag_to_index: Dictionary[String, int]
+var countries: DropdownIndex
 
 
 func populate_buttons() -> void:
-	populate_country_button()
+	countries = DropdownIndex.new([country_dropdown])
+	countries.populate(database.tag_to_country.keys())
 	populate_ideology_button()
 
 
-func show_country(country: Country):
+func show_country(country: Country) -> void:
 	if country == null:
 		return
 	selected_country = country
-	country_dropdown.select(tag_to_index[country.tag])
+	country_dropdown.select(countries.id_to_index[country.tag])
 	tag_edit.text = country.tag
 	base_name_edit.text = country.base_name
 	map_color_picker.color = country.map_color
@@ -38,33 +38,21 @@ func show_country(country: Country):
 
 
 func refresh_country_button() -> void:
-	country_dropdown.clear()
-	index_to_tag.clear()
-	tag_to_index.clear()
-	populate_country_button()
+	countries.populate(database.tag_to_country.keys())
 	if selected_country != null:
-		country_dropdown.select(tag_to_index[selected_country.tag])
-
-
-func populate_country_button() -> void:
-	var i: int = 0
-	for tag in database.tag_to_country:
-		country_dropdown.add_item(tag)
-		index_to_tag[i] = tag
-		tag_to_index[tag] = i
-		i += 1
+		country_dropdown.select(countries.id_to_index[selected_country.tag])
 
 
 func populate_ideology_button() -> void:
-	for ideology in Country.Ideology:
+	for ideology: String in Country.Ideology:
 		ideology_dropdown.add_item(ideology)
 
 
 # BUTTONS
 
 func _on_ob_country_select_item_selected(index: int) -> void:
-	var country: Country = database.tag_to_country[index_to_tag[index]]
-	show_country(country)
+	var country: Country = database.tag_to_country[countries.index_to_id[index]]
+	country_selected.emit(country)
 
 
 func _on_line_edit_tag_text_changed(new_text: String) -> void:

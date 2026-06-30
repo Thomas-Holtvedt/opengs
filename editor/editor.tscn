@@ -8,8 +8,9 @@
 [ext_resource type="AudioStream" uid="uid://bhbweuth6d8xt" path="res://assets/audio/Open_World_-_Happiness_Full.WAV" id="6_6hpnh"]
 [ext_resource type="Script" uid="uid://0c5055txr5p4" path="res://editor/selection_controller.gd" id="7_selctrl"]
 [ext_resource type="Script" uid="uid://ddojyyvgp6dp6" path="res://editor/province_mutator.gd" id="8_mutator"]
-[ext_resource type="PackedScene" path="res://editor/ui/ui_editor.tscn" id="8_yyul4"]
+[ext_resource type="PackedScene" uid="uid://fhm3x6nwgara" path="res://editor/ui/ui_editor.tscn" id="8_yyul4"]
 [ext_resource type="Script" uid="uid://oj7am0x5w5wn" path="res://editor/country_mutator.gd" id="9_cmutator"]
+[ext_resource type="PackedScene" uid="uid://bnu1uxcmakle2" path="res://core/utils/flag_icon_generator.tscn" id="11_loxr8"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_6hpnh"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -59,7 +60,8 @@ script = ExtResource("9_cmutator")
 [node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=547669375]
 stream = ExtResource("6_6hpnh")
 
-[connection signal="far_map" from="CameraControllerEditor" to="." method="_on_camera_controller_far_map"]
+[node name="FlagIconGenerator" parent="." unique_id=786863813 instance=ExtResource("11_loxr8")]
+
 [connection signal="province_selected" from="CameraControllerEditor" to="." method="_on_camera_controller_province_selected"]
 [connection signal="selection_changed" from="SelectionController" to="." method="_on_selection_changed"]
 [connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]

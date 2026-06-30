@@ -1,0 +1,43 @@
+{
+	"background_color_1": [
+		0.0,
+		0.0,
+		0.5686274766922
+	],
+	"background_color_2": [
+		1.0,
+		1.0,
+		1.0
+	],
+	"background_color_3": [
+		0.882352948188782,
+		0.0,
+		0.0588235296308994
+	],
+	"background_image": "tri_vertical",
+	"icon_1_color": [
+		0.0,
+		0.0,
+		0.0
+	],
+	"icon_1_image": "no_icon",
+	"icon_1_offset": [
+		0.0,
+		0.0
+	],
+	"icon_2_color": [
+		0.0,
+		0.0,
+		0.0
+	],
+	"icon_2_image": "no_icon",
+	"icon_2_offset": [
+		0.0,
+		0.0
+	],
+	"icon_colored_image": "no_icon",
+	"icon_colored_offset": [
+		0.0,
+		0.0
+	]
+}

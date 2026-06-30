@@ -3,19 +3,27 @@ class_name SelectionController
 
 # Owns selected_provinces state. Translates clicks into selection changes,
 # drives map highlight, and emits selection_changed for UI to react.
+# Dependencies are injected once via setup().
 
 signal selection_changed(provinces: Array[Province])
 
+var map: Map
+var db: Database
 var selected_provinces: Array[Province] = []
 
 
-func select_at(world_pos: Vector2, additive: bool, map: Map, db: Database) -> void:
+func setup(target_map: Map, database: Database) -> void:
+	map = target_map
+	db = database
+
+
+func select_at(world_pos: Vector2, additive: bool) -> void:
 	var color: Color = map.get_pixel_lookup_color(world_pos)
 	var clicked: Province = db.color_to_province[color]
-	select(clicked, additive, map)
+	select(clicked, additive)
 
 
-func select(province: Province, additive: bool, map: Map) -> void:
+func select(province: Province, additive: bool) -> void:
 	if additive:
 		if province in selected_provinces:
 			if selected_provinces.size() > 1:
