@@ -1,71 +1,90 @@
 extends Node
 class_name ProvinceMutator
 
-# Owns the multi-step transactions that mutate province state and refresh the map.
-# Callers pass in the provinces to act on; this node hides the required call ordering
-# (update_map_modes → commit → refresh SDF → update_map → update labels).
+# Owns the multi-step transactions that mutate the selected provinces and refresh
+# the map, hiding the required call ordering (update_map_modes → commit →
+# refresh SDF → update_map → update labels). Dependencies are injected once via
+# setup() so UI signals can connect straight to these methods.
+
+var map: Map
+var db: Database
+var selection: SelectionController
 
 
-
-func set_province_owner(provinces: Array[Province], new_owner: Country, map: Map, db: Database) -> void:
-	var old_owners: Array[Country] = []
-	for province in provinces:
-		if province.province_owner not in old_owners:
-			old_owners.append(province.province_owner)
-		province.province_owner = new_owner
-		map.update_map_modes(province, false)
-		map.update_country_borders(province, db, false)
-	map.commit_map_modes()
-	map.refresh_country_sdf()
-	map.update_map()
-	map.update_country_label(new_owner)
-	for old in old_owners:
-		map.update_country_label(old)
+func setup(target_map: Map, database: Database, selection_controller: SelectionController) -> void:
+	map = target_map
+	db = database
+	selection = selection_controller
 
 
-func set_province_owner_for_territory(provinces: Array[Province], new_owner: Country, map: Map, db: Database) -> void:
-	set_province_owner(_expand_to_territories(provinces), new_owner, map, db)
+func set_province_owner(new_owner: Country) -> void:
+	_set_owner_of(selection.selected_provinces, new_owner)
 
 
-func set_province_controller(provinces: Array[Province], new_controller: Country, map: Map) -> void:
-	for province in provinces:
-		province.province_controller = new_controller
-		map.update_map_modes(province, false)
-	map.commit_map_modes()
-	map.update_map()
+func set_province_owner_for_territory(new_owner: Country) -> void:
+	_set_owner_of(_expand_to_territories(selection.selected_provinces), new_owner)
 
 
-func set_province_controller_for_territory(provinces: Array[Province], new_controller: Country, map: Map) -> void:
-	set_province_controller(_expand_to_territories(provinces), new_controller, map)
+func set_province_controller(new_controller: Country) -> void:
+	_set_controller_of(selection.selected_provinces, new_controller)
 
 
-func set_type(provinces: Array[Province], index: int) -> void:
-	for province in provinces:
+func set_province_controller_for_territory(new_controller: Country) -> void:
+	_set_controller_of(_expand_to_territories(selection.selected_provinces), new_controller)
+
+
+func set_type(index: int) -> void:
+	for province: Province in selection.selected_provinces:
 		province.type = Province.Type.values()[index]
 
 
-func set_terrain(provinces: Array[Province], index: int, map: Map) -> void:
-	for province in provinces:
+func set_terrain(index: int) -> void:
+	for province: Province in selection.selected_provinces:
 		province.terrain = Province.Terrain.values()[index]
 		map.update_map_modes(province, false)
 	map.commit_map_modes()
 	map.update_map()
 
 
-func set_territory(provinces: Array[Province], new_territory: Territory, map: Map, db: Database) -> void:
-	for province in provinces:
-		province.set_territory(new_territory)
-		map.update_map_texture(province, db, false)
+func set_territory(new_territory: Territory) -> void:
+	for province: Province in selection.selected_provinces:
+		province.territory = new_territory
+		map.update_map_texture(province, false)
 	map.refresh_territory_sdf()
 
 
+func _set_owner_of(provinces: Array[Province], new_owner: Country) -> void:
+	var old_owners: Array[Country] = []
+	for province: Province in provinces:
+		if province.province_owner not in old_owners:
+			old_owners.append(province.province_owner)
+		province.province_owner = new_owner
+		map.update_map_modes(province, false)
+		map.update_country_borders(province, false)
+	map.commit_map_modes()
+	map.refresh_country_sdf()
+	map.update_map()
+	map.update_country_label(new_owner)
+	for old_owner: Country in old_owners:
+		map.update_country_label(old_owner)
+	_set_controller_of(provinces, new_owner) # Set both
+
+
+func _set_controller_of(provinces: Array[Province], new_controller: Country) -> void:
+	for province: Province in provinces:
+		province.province_controller = new_controller
+		map.update_map_modes(province, false)
+	map.commit_map_modes()
+	map.update_map()
+
+
 func _expand_to_territories(provinces: Array[Province]) -> Array[Province]:
-	var visited: Dictionary = {}
+	var visited: Dictionary[Province, bool] = {}
 	var result: Array[Province] = []
-	for selected in provinces:
+	for selected: Province in provinces:
 		if selected.territory == null:
 			continue
-		for province in selected.territory.provinces:
+		for province: Province in selected.territory.provinces:
 			if province in visited:
 				continue
 			visited[province] = true

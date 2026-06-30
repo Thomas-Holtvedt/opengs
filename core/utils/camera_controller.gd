@@ -54,10 +54,10 @@ signal far_map(is_far: bool)
 # Control Variables
 class CameraTranslationCalculator extends PVACalculator: # Base class for camera movement and panning
 	func get_value() -> Vector3:
-		return global.position
+		return host.position
 
 	func set_value(val) -> void:
-		global.position = val
+		host.position = val
 
 	@warning_ignore("unused_parameter")
 	func on_input_event(event: InputEvent) -> void:
@@ -65,17 +65,17 @@ class CameraTranslationCalculator extends PVACalculator: # Base class for camera
 
 	func update_velocity() -> void:
 		# Share zoom-scaled translation behavior for movement and edge panning.
-		var safe_zoom = global.camera_zoom._clamp_value(global.camera_zoom.get_value())
+		var safe_zoom = host.camera_zoom._clamp_value(host.camera_zoom.get_value())
 		self.velocity += self.get_final_frame_acceleration() * self.acceleration_speed_factor * safe_zoom
 		self.frame_acceleration = self.starting_value
 
 # Camera Movement
 class MovementCalculator extends CameraTranslationCalculator:
 	func get_final_frame_acceleration() -> Vector3:
-		if Input.is_action_pressed("camera_move_forward"): self.frame_acceleration -= global.transform.basis.z
-		if Input.is_action_pressed("camera_move_backward"): self.frame_acceleration += global.transform.basis.z
-		if Input.is_action_pressed("camera_move_right"): self.frame_acceleration += global.transform.basis.x
-		if Input.is_action_pressed("camera_move_left"): self.frame_acceleration -= global.transform.basis.x
+		if Input.is_action_pressed("camera_move_forward"): self.frame_acceleration -= host.transform.basis.z
+		if Input.is_action_pressed("camera_move_backward"): self.frame_acceleration += host.transform.basis.z
+		if Input.is_action_pressed("camera_move_right"): self.frame_acceleration += host.transform.basis.x
+		if Input.is_action_pressed("camera_move_left"): self.frame_acceleration -= host.transform.basis.x
 		self.frame_acceleration = self.frame_acceleration.normalized()
 		return self.frame_acceleration
 
@@ -85,11 +85,11 @@ var camera_move: MovementCalculator
 # Camera Panning by screen edges
 class AutomaticPanCalculator extends CameraTranslationCalculator:
 	func get_final_frame_acceleration() -> Vector3:
-		var viewport_current:Viewport = global.get_viewport()
+		var viewport_current:Viewport = host.get_viewport()
 		var viewport_visible_rectangle:Rect2i = Rect2i(viewport_current.get_visible_rect())
 		var viewport_size:Vector2i = viewport_visible_rectangle.size
 		var current_mouse_position:Vector2 = viewport_current.get_mouse_position()
-		var margin:float = global.camera_automatic_pan_margin
+		var margin:float = host.camera_automatic_pan_margin
 
 		if margin <= 0:
 			return Vector3.ZERO
@@ -105,7 +105,7 @@ class AutomaticPanCalculator extends CameraTranslationCalculator:
 		elif current_mouse_position.y > viewport_size.y - margin:
 			pan_direction.y = 1
 
-		return global.transform.basis.x * pan_direction.x + global.transform.basis.z * pan_direction.y
+		return host.transform.basis.x * pan_direction.x + host.transform.basis.z * pan_direction.y
 
 var camera_automatic_pan: AutomaticPanCalculator
 
@@ -115,24 +115,24 @@ class MouseRotationCalculator extends PVACalculator:
 	var mouse_last_position = null
 
 	func get_value() -> Vector2:
-		return Vector2(global.camera_socket.rotation.x, global.rotation.y)
+		return Vector2(host.camera_socket.rotation.x, host.rotation.y)
 
 	func set_value(val) -> void:
-		global.camera_socket.rotation.x = val.x
-		global.rotation.y = val.y
+		host.camera_socket.rotation.x = val.x
+		host.rotation.y = val.y
 
 	func on_input_event(event: InputEvent) -> void:
 		if event.is_action_pressed("camera_rotate_mouse"):
-			self.mouse_last_position = global.get_viewport().get_mouse_position()
+			self.mouse_last_position = host.get_viewport().get_mouse_position()
 		elif event.is_action_released("camera_rotate_mouse"):
 			self.mouse_last_position = null
 
 	func get_final_frame_acceleration() -> Vector2:
 		if self.mouse_last_position == null:
 			return Vector2.ZERO
-		var mouse_offset: Vector2 = global.get_viewport().get_mouse_position()
+		var mouse_offset: Vector2 = host.get_viewport().get_mouse_position()
 		mouse_offset -= self.mouse_last_position
-		self.mouse_last_position = global.get_viewport().get_mouse_position()
+		self.mouse_last_position = host.get_viewport().get_mouse_position()
 		self.frame_acceleration.x -= mouse_offset.y # This invertion is intentional
 		self.frame_acceleration.y -= mouse_offset.x
 		return self.frame_acceleration
@@ -143,11 +143,11 @@ var camera_rotate_mouse: MouseRotationCalculator
 # Camera Rotation to Keys on X and Y
 class KeysRotationCalculator extends PVACalculator:
 	func get_value() -> Vector2:
-		return Vector2(global.camera_socket.rotation.x, global.rotation.y)
+		return Vector2(host.camera_socket.rotation.x, host.rotation.y)
 
 	func set_value(val) -> void:
-		global.camera_socket.rotation.x = val.x
-		global.rotation.y = val.y
+		host.camera_socket.rotation.x = val.x
+		host.rotation.y = val.y
 
 	@warning_ignore("unused_parameter")
 	func on_input_event(event: InputEvent) -> void:
@@ -170,10 +170,10 @@ var camera_rotate_keys: KeysRotationCalculator
 # Camera Zooming
 class ZoomCalculator extends PVACalculator:
 	func get_value() -> float:
-		return global.camera.position.z
+		return host.camera.position.z
 
 	func set_value(val: float) -> void:
-		global.camera.position.z = val
+		host.camera.position.z = val
 
 	func on_input_event(event: InputEvent) -> void:
 		if event.is_action_pressed("camera_zoom_in"):

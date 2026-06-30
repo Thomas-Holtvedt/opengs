@@ -3,7 +3,7 @@
 [ext_resource type="Shader" uid="uid://etl1fouj3y0j" path="res://map/map_shaders/map3d.gdshader" id="1_bvc1u"]
 [ext_resource type="Texture2D" uid="uid://d3vp8kji11mh3" path="res://map/map_data/height.png" id="2_a8jy5"]
 [ext_resource type="Texture2D" uid="uid://b25f0j7j8gqai" path="res://map/map_data/normal.png" id="3_7f33n"]
-[ext_resource type="Texture2D" uid="uid://c2awdr8xkjr6h" path="res://map/map_data/ne2.png" id="4_0uddw"]
+[ext_resource type="Texture2D" uid="uid://bk4dbdlgmw4qt" path="res://map/map_data/Oldpapertexture01.jpg" id="4_bvc1u"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_lgq1i"]
 viewport_path = NodePath("MeshInstance3D/SubViewport")
@@ -12,10 +12,13 @@ viewport_path = NodePath("MeshInstance3D/SubViewport")
 resource_local_to_scene = true
 render_priority = 0
 shader = ExtResource("1_bvc1u")
-shader_parameter/terrain_image = ExtResource("4_0uddw")
+shader_parameter/terrain_image = ExtResource("4_bvc1u")
 shader_parameter/subview_image = SubResource("ViewportTexture_lgq1i")
 shader_parameter/normalmap_image = ExtResource("3_7f33n")
 shader_parameter/heightmap_image = ExtResource("2_a8jy5")
-shader_parameter/terrain_saturation = 1.4000000665
+shader_parameter/terrain_saturation = 0.82800003933
+shader_parameter/subview_saturation = 0.7810000370975
+shader_parameter/terrain_mix = 0.24400001159
 shader_parameter/height_scale = 0.0
 shader_parameter/normal_strength = 1.0
+shader_parameter/normalmap_strength = 0.0

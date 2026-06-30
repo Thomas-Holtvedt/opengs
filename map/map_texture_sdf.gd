@@ -10,6 +10,9 @@ const SENTINEL: int = 0xFFFF
 # the SPIR-V shaders is the dominant cost of a JFA build (several hundred ms on Vulkan/Windows
 # in practice), so we set them up lazily on first use and reuse them for every subsequent
 # build_sdf / build_sdf_region call. The RIDs live for the lifetime of the process.
+# MAIN THREAD ONLY: Godot restricts a RenderingDevice to the thread that created it, and the
+# first build always happens on the main thread (cold gen / territory refresh). Worker threads
+# must hand their JFA work back to the main thread (see MapTextureGenerator._country_sdf_apply).
 static var _rd: RenderingDevice = null
 static var _jfa_shader: RID
 static var _jfa_pipeline: RID

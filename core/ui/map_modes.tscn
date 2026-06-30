@@ -41,8 +41,3 @@ text = "Territory"
 layout_mode = 2
 text = "Terrain"
 
-[connection signal="button_up" from="PanelContainer/GridContainer/ButtonPolitical" to="." method="_on_button_political_button_up"]
-[connection signal="button_up" from="PanelContainer/GridContainer/ButtonIdeology" to="." method="_on_button_ideology_button_up"]
-[connection signal="button_up" from="PanelContainer/GridContainer/ButtonProvince" to="." method="_on_button_province_button_up"]
-[connection signal="button_up" from="PanelContainer/GridContainer/ButtonTerritory" to="." method="_on_button_territory_button_up"]
-[connection signal="button_up" from="PanelContainer/GridContainer/ButtonTerrain" to="." method="_on_button_terrain_button_up"]

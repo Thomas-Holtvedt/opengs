@@ -29,19 +29,19 @@ func _init(provinces: Array[Province]) -> void:
 			highlighted_territory.append(t_province.color)
 
 
-func apply_highlights(mm: MapMode) -> MapMode:
+# Mutates the given map mode in place.
+func apply_highlights(map_mode: MapMode) -> void:
 	for color: Color in highlighted_territory:
-		mm.update_color_map(color, territory_hl, mm.highlight_offset)
+		map_mode.update_color_map(color, territory_hl, map_mode.highlight_offset)
 	for color: Color in highlighted_provinces:
-		mm.update_color_map(color, province_hl, mm.highlight_offset)
-	mm.commit()
-	return mm
+		map_mode.update_color_map(color, province_hl, map_mode.highlight_offset)
+	map_mode.commit()
 
 
-func remove_highlights(mm: MapMode) -> MapMode:
+# Mutates the given map mode in place.
+func remove_highlights(map_mode: MapMode) -> void:
 	for color: Color in highlighted_territory:
-		mm.update_color_map(color, null_hl, mm.highlight_offset)
+		map_mode.update_color_map(color, null_hl, map_mode.highlight_offset)
 	for color: Color in highlighted_provinces:
-		mm.update_color_map(color, null_hl, mm.highlight_offset)
-	mm.commit()
-	return mm
+		map_mode.update_color_map(color, null_hl, map_mode.highlight_offset)
+	map_mode.commit()

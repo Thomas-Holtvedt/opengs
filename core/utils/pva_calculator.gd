@@ -6,7 +6,7 @@ const NLOG2: float = -0.6931471805599453  # -ln(2), used by half-life dampening
 
 # Variant refers to a float or a vector here
 # Constant
-var global: Node3D # For subclasses: Access variables from the outer class (whole file)
+var host: Node3D # The node that owns this calculator; gives subclasses access to its state
 var acceleration_speed_factor: Variant
 var velocity_half_life: float
 var min_bound: Variant
@@ -20,8 +20,8 @@ var velocity: Variant
 var frame_acceleration: Variant # Auto merged into velocity, reset each frame
 
 
-func _init(global_node: Node3D, _acceleration_speed_factor, _velocity_half_life: float, _min_bound, _max_bound, _starting_value):
-	global = global_node
+func _init(host_node: Node3D, _acceleration_speed_factor, _velocity_half_life: float, _min_bound, _max_bound, _starting_value):
+	host = host_node
 	acceleration_speed_factor = _acceleration_speed_factor
 	velocity_half_life = _velocity_half_life
 	min_bound = _min_bound

@@ -2,32 +2,33 @@ extends BaseImporter
 class_name ProvinceImporter
 
 func import_definition(db: Database) -> void:
-	for line in read_lines("res://data/definitions/provinces.txt"):
-		var a = line.split(";")
-		if a.size() < 7:
+	for line: String in read_lines("res://data/definitions/provinces.txt"):
+		var fields: PackedStringArray = line.split(";")
+		if fields.size() < 8:
 			continue
 
-		var province = Province.new(
-			a[0],
-			Province.Type[a[1].to_upper()],
-			Color(a[2].to_float()/255, a[3].to_float()/255, a[4].to_float()/255),
-			Vector2i(a[5].to_int(), a[6].to_int()),
-			Province.Terrain[a[7].to_upper()]
+		var province: Province = Province.new(
+			fields[0],
+			Province.Type[fields[1].to_upper()],
+			Color(fields[2].to_float()/255, fields[3].to_float()/255, fields[4].to_float()/255),
+			Vector2i(fields[5].to_int(), fields[6].to_int()),
+			Province.Terrain[fields[7].to_upper()]
 		)
 
 		db.id_to_province[province.id] = province
 		db.color_to_province[province.color] = province
 
 func import_history(db: Database) -> void:
-	var all_data = read_json("res://data/history/provinces/provinces.json")
+	var all_data: Dictionary = read_json("res://data/history/provinces/provinces.json")
 
-	for pid in db.id_to_province.keys():
+	for pid: String in db.id_to_province.keys():
 		var province: Province = db.id_to_province[pid]
 		if province.type == Province.Type.LAND:
 			province.province_owner = db.tag_to_country["NNN"]
 			province.province_controller = db.tag_to_country["NNN"]
 			if all_data.has(pid):
 				var data: Dictionary = all_data[pid]
+				set_matching_fields(province, data)
 				if data.has("province_owner"):
 					var owner_tag: String = data["province_owner"]
 					if owner_tag in db.tag_to_country:

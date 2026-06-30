@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://bnu1uxcmakle2"]
+
+[ext_resource type="Script" uid="uid://lp2ysbkyibvy" path="res://core/utils/flag_icon_generator.gd" id="1_a1mfy"]
+[ext_resource type="PackedScene" uid="uid://b1e4pl0vipr0h" path="res://core/ui/flag_display.tscn" id="1_smtus"]
+[ext_resource type="Shader" uid="uid://gxsepwhwhv88" path="res://core/shaders/flag_display.gdshader" id="2_a1mfy"]
+[ext_resource type="Texture2D" uid="uid://cskp860nck1r8" path="res://assets/flags/icons_colored/no_icon.png" id="3_vx151"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2gfy1"]
+resource_local_to_scene = true
+shader = ExtResource("2_a1mfy")
+shader_parameter/overlay_image = ExtResource("3_vx151")
+shader_parameter/overlay_strength = 2.000000095
+shader_parameter/background_color_1 = Color(0, 0, 0, 1)
+shader_parameter/background_color_2 = Color(0, 0, 0, 1)
+shader_parameter/background_color_3 = Color(0, 0, 0, 1)
+shader_parameter/icon_1_color = Color(0, 0, 0, 1)
+shader_parameter/icon_1_offset = Vector2(0, 0)
+shader_parameter/icon_2_color = Color(0, 0, 0, 1)
+shader_parameter/icon_2_offset = Vector2(0, 0)
+shader_parameter/icon_colored_offset = Vector2(0, 0)
+shader_parameter/canton_size = Vector2(0, 0)
+shader_parameter/canton_background_color_1 = Color(0, 0, 0, 1)
+shader_parameter/canton_background_color_2 = Color(0, 0, 0, 1)
+shader_parameter/canton_background_color_3 = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_1_color = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_1_offset = Vector2(0, 0)
+shader_parameter/canton_icon_2_color = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_2_offset = Vector2(0, 0)
+shader_parameter/canton_icon_colored_offset = Vector2(0, 0)
+shader_parameter/blur_amount = 0.003
+
+[node name="FlagIconGenerator" type="SubViewport" unique_id=786863813]
+size = Vector2i(225, 150)
+script = ExtResource("1_a1mfy")
+
+[node name="FlagDisplay" parent="." unique_id=664549936 instance=ExtResource("1_smtus")]
+material = SubResource("ShaderMaterial_2gfy1")
+offset_right = 225.0
+offset_bottom = 150.0

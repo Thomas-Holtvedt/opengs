@@ -56,9 +56,12 @@ func load_country_sdf() -> Image:
 
 
 func load_color_map(db: Database) -> void:
-	var f: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.READ)
-	db.province_color_to_lookup = str_to_var(f.get_as_text())
-	f.close()
+	var file: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.READ)
+	if file == null:
+		push_error("Failed to open: " + _cache_path(COLOR_MAP_FILE))
+		return
+	db.province_color_to_lookup = str_to_var(file.get_as_text())
+	file.close()
 
 
 func save(lookup_image: Image, border_image: Image, territory_border_image: Image, country_border_image: Image, province_sdf_image: Image, territory_sdf_image: Image, country_sdf_image: Image, db: Database) -> void:
@@ -70,9 +73,12 @@ func save(lookup_image: Image, border_image: Image, territory_border_image: Imag
 	province_sdf_image.save_png(_cache_path(PROVINCE_SDF_FILE))
 	territory_sdf_image.save_png(_cache_path(TERRITORY_SDF_FILE))
 	country_sdf_image.save_png(_cache_path(COUNTRY_SDF_FILE))
-	var f: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
-	f.store_string(var_to_str(db.province_color_to_lookup))
-	f.close()
+	var file: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
+	if file == null:
+		push_error("Failed to open: " + _cache_path(COLOR_MAP_FILE))
+		return
+	file.store_string(var_to_str(db.province_color_to_lookup))
+	file.close()
 
 
 func _load_image(file: String, format: Image.Format) -> Image:
