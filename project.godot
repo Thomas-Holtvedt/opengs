@@ -14,11 +14,17 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 [application]
 
-config/name="Secretary General Editor"
+config/name="Open Grand Strategy"
 config/description="This open-source Grand Strategy game is built to emulate the style made popular by Paradox and similar games."
 run/main_scene="uid://uwfcduh1f75g"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="uid://csqa3oh2wknhm"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="viewport"
 
 [display]
 
