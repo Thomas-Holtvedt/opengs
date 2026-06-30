@@ -1,3 +1,5 @@
+# Extends ImageTexture deliberately: the mode IS the color-map texture, so it can be
+# bound directly as the color_map_image shader uniform (see Map.update_map).
 extends ImageTexture
 class_name MapMode
 
@@ -88,11 +90,12 @@ func _terrain_color(terrain: Province.Terrain) -> Color:
 
 
 func update_color_map(input_color: Color, output_color: Color, offset: int) -> void:
-	var lookup: Color = _province_color_to_lookup.get(input_color, null)
-	if lookup:
-		var x: int = roundi(lookup.r * 255)
-		var y: int = roundi(lookup.g * 255)
-		color_map.set_pixel(x, y + offset, output_color)
+	if not _province_color_to_lookup.has(input_color):
+		return
+	var lookup: Color = _province_color_to_lookup[input_color]
+	var x: int = roundi(lookup.r * 255)
+	var y: int = roundi(lookup.g * 255)
+	color_map.set_pixel(x, y + offset, output_color)
 
 
 func commit() -> void:

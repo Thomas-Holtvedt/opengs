@@ -1,8 +1,37 @@
 [gd_scene format=3 uid="uid://fhm3x6nwgara"]
 
-[ext_resource type="Script" path="res://editor/ui/ui_editor.gd" id="1_uied0"]
+[ext_resource type="Script" uid="uid://dndfiicfthktl" path="res://editor/ui/ui_editor.gd" id="1_uied0"]
 [ext_resource type="Script" uid="uid://b23vkoymyk6tq" path="res://editor/ui/province_editor.gd" id="2_prved"]
 [ext_resource type="Script" uid="uid://cw5oajsg7r6yw" path="res://editor/ui/country_editor.gd" id="3_ctry0"]
+[ext_resource type="Script" uid="uid://chomcrtclhk6n" path="res://editor/ui/flag_editor.gd" id="4_5qgwo"]
+[ext_resource type="PackedScene" uid="uid://b1e4pl0vipr0h" path="res://core/ui/flag_display.tscn" id="5_8bpo5"]
+[ext_resource type="PackedScene" uid="uid://bnu1uxcmakle2" path="res://core/utils/flag_icon_generator.tscn" id="5_osrbk"]
+[ext_resource type="Shader" uid="uid://gxsepwhwhv88" path="res://core/shaders/flag_display.gdshader" id="6_8bpo5"]
+[ext_resource type="Texture2D" uid="uid://b68adlv54p4ow" path="res://assets/flags/effects/Flag_overlay.png" id="7_gsxmr"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gsxmr"]
+resource_local_to_scene = true
+shader = ExtResource("6_8bpo5")
+shader_parameter/overlay_image = ExtResource("7_gsxmr")
+shader_parameter/overlay_strength = 2.000000095
+shader_parameter/background_color_1 = Color(0, 0, 0, 1)
+shader_parameter/background_color_2 = Color(0, 0, 0, 1)
+shader_parameter/background_color_3 = Color(0, 0, 0, 1)
+shader_parameter/icon_1_color = Color(0, 0, 0, 1)
+shader_parameter/icon_1_offset = Vector2(0, 0)
+shader_parameter/icon_2_color = Color(0, 0, 0, 1)
+shader_parameter/icon_2_offset = Vector2(0, 0)
+shader_parameter/icon_colored_offset = Vector2(0, 0)
+shader_parameter/canton_size = Vector2(0, 0)
+shader_parameter/canton_background_color_1 = Color(0, 0, 0, 1)
+shader_parameter/canton_background_color_2 = Color(0, 0, 0, 1)
+shader_parameter/canton_background_color_3 = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_1_color = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_1_offset = Vector2(0, 0)
+shader_parameter/canton_icon_2_color = Color(0, 0, 0, 1)
+shader_parameter/canton_icon_2_offset = Vector2(0, 0)
+shader_parameter/canton_icon_colored_offset = Vector2(0, 0)
+shader_parameter/blur_amount = 0.003
 
 [node name="UIEditor" type="CanvasLayer" unique_id=1907813086]
 script = ExtResource("1_uied0")
@@ -12,9 +41,10 @@ anchors_preset = 10
 anchor_right = 1.0
 grow_horizontal = 2
 current_tab = 0
-tab_count = 2
+tab_count = 3
 tab_0/title = "Provinces"
 tab_1/title = "Countries"
+tab_2/title = "Flags"
 
 [node name="ProvinceEditor" type="PanelContainer" parent="." unique_id=9685244]
 anchors_preset = 9
@@ -166,6 +196,122 @@ text = "Create Country"
 layout_mode = 2
 text = "Save Countries"
 
+[node name="FlagEditor" type="PanelContainer" parent="." unique_id=1667561412]
+visible = false
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 31.0
+offset_right = 253.0
+grow_vertical = 2
+script = ExtResource("4_5qgwo")
+
+[node name="VB" type="VBoxContainer" parent="FlagEditor" unique_id=1231510348]
+layout_mode = 2
+
+[node name="FlagDisplay" parent="FlagEditor/VB" unique_id=664549936 instance=ExtResource("5_8bpo5")]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_gsxmr")
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+stretch_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="FlagEditor/VB" unique_id=308207897]
+layout_mode = 2
+size_flags_vertical = 0
+
+[node name="LabelTextFlag" type="Label" parent="FlagEditor/VB/HBoxContainer" unique_id=1416966170]
+layout_mode = 2
+text = "Text Icon: "
+
+[node name="RTLTextFlag" type="RichTextLabel" parent="FlagEditor/VB/HBoxContainer" unique_id=1376279780]
+layout_mode = 2
+size_flags_horizontal = 3
+bbcode_enabled = true
+text = "Placeholder
+"
+scroll_active = false
+vertical_alignment = 1
+
+[node name="OBBackground" type="OptionButton" parent="FlagEditor/VB" unique_id=543501267]
+layout_mode = 2
+
+[node name="CPBBackground1" type="ColorPickerButton" parent="FlagEditor/VB" unique_id=557150532]
+layout_mode = 2
+text = "Primary Color"
+
+[node name="CPBBackground2" type="ColorPickerButton" parent="FlagEditor/VB" unique_id=399589091]
+layout_mode = 2
+text = "Secondary Color"
+
+[node name="CPBBackground3" type="ColorPickerButton" parent="FlagEditor/VB" unique_id=1224920011]
+layout_mode = 2
+text = "Tertiary Color"
+
+[node name="OBIcon1" type="OptionButton" parent="FlagEditor/VB" unique_id=1453665034]
+layout_mode = 2
+
+[node name="CPBIcon1" type="ColorPickerButton" parent="FlagEditor/VB" unique_id=153890463]
+layout_mode = 2
+text = "Icon 1 Color"
+
+[node name="HSIcon1X" type="HSlider" parent="FlagEditor/VB" unique_id=1292637604]
+layout_mode = 2
+min_value = -100.0
+
+[node name="HSIcon1Y" type="HSlider" parent="FlagEditor/VB" unique_id=135294371]
+layout_mode = 2
+min_value = -100.0
+
+[node name="OBIcon2" type="OptionButton" parent="FlagEditor/VB" unique_id=1112588493]
+layout_mode = 2
+
+[node name="CPBIcon2" type="ColorPickerButton" parent="FlagEditor/VB" unique_id=698630006]
+layout_mode = 2
+text = "Icon 2 Color"
+
+[node name="HSIcon2X" type="HSlider" parent="FlagEditor/VB" unique_id=1814560616]
+layout_mode = 2
+min_value = -100.0
+
+[node name="HSIcon2Y" type="HSlider" parent="FlagEditor/VB" unique_id=1605435967]
+layout_mode = 2
+min_value = -100.0
+
+[node name="OBIconColored" type="OptionButton" parent="FlagEditor/VB" unique_id=550954800]
+layout_mode = 2
+
+[node name="HSIconColoredX" type="HSlider" parent="FlagEditor/VB" unique_id=375346199]
+layout_mode = 2
+min_value = -100.0
+
+[node name="HSIconColoredY" type="HSlider" parent="FlagEditor/VB" unique_id=795972300]
+layout_mode = 2
+min_value = -100.0
+
+[node name="OBCanton" type="OptionButton" parent="FlagEditor/VB" unique_id=2064016065]
+layout_mode = 2
+
+[node name="HSCantonX" type="HSlider" parent="FlagEditor/VB" unique_id=2142292582]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="HSCantonY" type="HSlider" parent="FlagEditor/VB" unique_id=297664444]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+
+[node name="BClearCanton" type="Button" parent="FlagEditor/VB" unique_id=717941188]
+layout_mode = 2
+text = "Clear Canton"
+
+[node name="Button" type="Button" parent="FlagEditor/VB" unique_id=1576268893]
+layout_mode = 2
+text = "Save Flags"
+
+[node name="FlagIconGenerator" parent="FlagEditor/VB" unique_id=786863813 instance=ExtResource("5_osrbk")]
+
 [connection signal="tab_changed" from="TabBar" to="." method="_on_tab_bar_tab_changed"]
 [connection signal="item_selected" from="ProvinceEditor/GridContainer/OBProvinceType" to="ProvinceEditor" method="_on_ob_province_type_item_selected"]
 [connection signal="item_selected" from="ProvinceEditor/GridContainer/OBProvinceOwner" to="ProvinceEditor" method="_on_ob_province_owner_item_selected"]
@@ -181,5 +327,25 @@ text = "Save Countries"
 [connection signal="text_changed" from="CountryEditor/GridContainer/LineEditBaseName" to="CountryEditor" method="_on_line_edit_base_name_text_changed"]
 [connection signal="color_changed" from="CountryEditor/GridContainer/ColorPickerMapColor" to="CountryEditor" method="_on_color_picker_map_color_color_changed"]
 [connection signal="item_selected" from="CountryEditor/GridContainer/OBIdeology" to="CountryEditor" method="_on_ob_ideology_item_selected"]
-[connection signal="button_up" from="CountryEditor/GridContainer/ButtonSaveCountries" to="CountryEditor" method="_on_button_save_countries_button_up"]
 [connection signal="button_up" from="CountryEditor/GridContainer/ButtonCreateCountry" to="CountryEditor" method="_on_button_create_country_button_up"]
+[connection signal="button_up" from="CountryEditor/GridContainer/ButtonSaveCountries" to="CountryEditor" method="_on_button_save_countries_button_up"]
+[connection signal="item_selected" from="FlagEditor/VB/OBBackground" to="FlagEditor" method="_on_ob_background_item_selected"]
+[connection signal="color_changed" from="FlagEditor/VB/CPBBackground1" to="FlagEditor" method="_on_cpb_background_1_color_changed"]
+[connection signal="color_changed" from="FlagEditor/VB/CPBBackground2" to="FlagEditor" method="_on_cpb_background_2_color_changed"]
+[connection signal="color_changed" from="FlagEditor/VB/CPBBackground3" to="FlagEditor" method="_on_cpb_background_3_color_changed"]
+[connection signal="item_selected" from="FlagEditor/VB/OBIcon1" to="FlagEditor" method="_on_ob_icon_1_item_selected"]
+[connection signal="color_changed" from="FlagEditor/VB/CPBIcon1" to="FlagEditor" method="_on_cpb_icon_1_color_changed"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSIcon1X" to="FlagEditor" method="_on_hs_icon_1x_drag_ended"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSIcon1Y" to="FlagEditor" method="_on_hs_icon_1y_drag_ended"]
+[connection signal="item_selected" from="FlagEditor/VB/OBIcon2" to="FlagEditor" method="_on_ob_icon_2_item_selected"]
+[connection signal="color_changed" from="FlagEditor/VB/CPBIcon2" to="FlagEditor" method="_on_cpb_icon_2_color_changed"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSIcon2X" to="FlagEditor" method="_on_hs_icon_2x_drag_ended"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSIcon2Y" to="FlagEditor" method="_on_hs_icon_2y_drag_ended"]
+[connection signal="item_selected" from="FlagEditor/VB/OBIconColored" to="FlagEditor" method="_on_ob_icon_colored_item_selected"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSIconColoredX" to="FlagEditor" method="_on_hs_icon_colored_x_drag_ended"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSIconColoredY" to="FlagEditor" method="_on_hs_icon_colored_y_drag_ended"]
+[connection signal="item_selected" from="FlagEditor/VB/OBCanton" to="FlagEditor" method="_on_ob_canton_item_selected"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSCantonX" to="FlagEditor" method="_on_hs_canton_x_drag_ended"]
+[connection signal="drag_ended" from="FlagEditor/VB/HSCantonY" to="FlagEditor" method="_on_hs_canton_y_drag_ended"]
+[connection signal="button_up" from="FlagEditor/VB/BClearCanton" to="FlagEditor" method="_on_b_clear_canton_button_up"]
+[connection signal="button_up" from="FlagEditor/VB/Button" to="FlagEditor" method="_on_button_button_up"]

@@ -31,9 +31,6 @@ material = ExtResource("3_lgq1i")
 texture = ExtResource("1_hgrid")
 centered = false
 
-[node name="CountryLabels" type="Node2D" parent="MeshInstance3D/SubViewport" unique_id=1454744972]
-unique_name_in_owner = true
-
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1334136468]
 shape = SubResource("BoxShape3D_hgrid")
 

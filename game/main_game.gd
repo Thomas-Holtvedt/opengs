@@ -9,10 +9,7 @@ var selected_province: Province
 
 func _ready() -> void:
 	DataImporter.new(db)
-	map.create_map_textures(db)
-	map.create_map_modes(db)
-	map.create_country_labels(db)
-	map.get_preview_images()
+	map.initialize(db)
 
 
 func _on_player_province_selected(mouse_pos: Vector2) -> void:

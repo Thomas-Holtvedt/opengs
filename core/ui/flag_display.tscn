@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://b1e4pl0vipr0h"]
+
+[ext_resource type="Script" uid="uid://bqot6vofh7707" path="res://core/ui/flag_display.gd" id="1_8gn1f"]
+[ext_resource type="Material" uid="uid://cfrhx3jiymfsj" path="res://core/shaders/flag_display.tres" id="1_mybg0"]
+[ext_resource type="Texture2D" uid="uid://crh8syf3s4tet" path="res://assets/flags/backgrounds/cross_left.png" id="1_vndvl"]
+
+[node name="FlagDisplay" type="TextureRect" unique_id=664549936]
+material = ExtResource("1_mybg0")
+texture = ExtResource("1_vndvl")
+stretch_mode = 4
+script = ExtResource("1_8gn1f")

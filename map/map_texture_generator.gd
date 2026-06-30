@@ -58,10 +58,9 @@ var _country_dirty_box: Rect2i
 var _country_worker_busy: bool = false
 var _country_pending_box: Rect2i
 
-# Stored Database reference so the worker can re-derive country border pixels without the
-# main thread having to pass `db` through the deferred call. Set lazily by
-# update_country_borders; the worker only reads provinces/ownership, never mutates them.
-var _db: Database
+# Injected once at construction. The country SDF worker reads it to re-derive border
+# pixels; it only reads provinces/ownership, never mutates them.
+var db: Database
 
 var province_image: Image
 var width: int
@@ -77,8 +76,9 @@ var country_sdf_height: int
 var cache: MapTextureCache
 
 
-func _init(p_province_image: Image) -> void:
+func _init(p_province_image: Image, p_db: Database) -> void:
 	province_image = p_province_image
+	db = p_db
 	width = province_image.get_width()
 	height = province_image.get_height()
 	src_data = province_image.get_data()
@@ -92,18 +92,18 @@ func _init(p_province_image: Image) -> void:
 	cache = MapTextureCache.new(src_data)
 
 
-func create_map_textures(db: Database) -> void:
+func create_map_textures() -> void:
 	if cache.available:
 		print("Loading Map from cache - Start")
-		_load_from_cache(db)
+		_load_from_cache()
 		print("Loading Map from cache - End")
 	else:
 		print("Generating Map - Start")
-		_generate(db)
+		_generate()
 		print("Generating Map - End")
 
 
-func _load_from_cache(db: Database) -> void:
+func _load_from_cache() -> void:
 	lookup_texture = ImageTexture.create_from_image(cache.load_lookup())
 	border_texture = ImageTexture.create_from_image(cache.load_border())
 	territory_border_image = cache.load_territory_border()
@@ -120,7 +120,7 @@ func _load_from_cache(db: Database) -> void:
 	cache.load_color_map(db)
 
 
-func _generate(db: Database) -> void:
+func _generate() -> void:
 	var lut_size: int = width * height * 2
 	var lut_stride: int = width * 2
 	var border_size: int = width * height
@@ -165,10 +165,10 @@ func _generate(db: Database) -> void:
 			var is_border: bool = _is_border_pixel(x, y, src_idx, r, g, b)
 			border_data[border_idx] = 0 if is_border else 255
 
-			var is_territory_border: bool = _is_territory_border_pixel(x, y, src_idx, r, g, b, territory_cache, db)
+			var is_territory_border: bool = _is_territory_border_pixel(x, y, src_idx, r, g, b, territory_cache)
 			territory_border_data[border_idx] = 0 if is_territory_border else 255
 
-			var is_country_border: bool = _is_country_border_pixel(x, y, src_idx, r, g, b, owner_cache, db)
+			var is_country_border: bool = _is_country_border_pixel(x, y, src_idx, r, g, b, owner_cache)
 			country_border_data[border_idx] = 0 if is_country_border else 255
 
 	var lut_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RG8, lut_data)
@@ -196,7 +196,7 @@ func _generate(db: Database) -> void:
 	cache.save(lut_image, border_image, territory_border_image, country_border_image, province_sdf_image, territory_sdf_image, country_sdf_image, db)
 
 
-func update_map_texture(db: Database, center: Vector2i, radius: int, refresh: bool = true) -> void:
+func update_map_texture(center: Vector2i, radius: int, refresh: bool = true) -> void:
 	var x_min: int = max(0, center.x - radius)
 	var x_max: int = min(width - 1, center.x + radius)
 	var y_min: int = max(0, center.y - radius)
@@ -210,7 +210,7 @@ func update_map_texture(db: Database, center: Vector2i, radius: int, refresh: bo
 			var r: int = src_data[src_idx]
 			var g: int = src_data[src_idx + 1]
 			var b: int = src_data[src_idx + 2]
-			var is_territory_border: bool = _is_territory_border_pixel(x, y, src_idx, r, g, b, territory_cache, db)
+			var is_territory_border: bool = _is_territory_border_pixel(x, y, src_idx, r, g, b, territory_cache)
 			territory_border_bytes[row + x] = 0 if is_territory_border else 255
 	_territory_dirty_box = _expand_dirty_box(_territory_dirty_box, x_min, y_min, x_max, y_max)
 	if refresh:
@@ -230,8 +230,7 @@ func refresh_territory_sdf() -> void:
 
 # Just tracks the dirty region on the main thread; the actual border-mask rewrite happens
 # on a worker thread inside _country_worker_run, kicked off by refresh_country_sdf.
-func update_country_borders(db: Database, center: Vector2i, radius: int, refresh: bool = true) -> void:
-	_db = db
+func update_country_borders(center: Vector2i, radius: int, refresh: bool = true) -> void:
 	var x_min: int = max(0, center.x - radius)
 	var x_max: int = min(width - 1, center.x + radius)
 	var y_min: int = max(0, center.y - radius)
@@ -263,14 +262,18 @@ func _start_country_worker(dirty_box: Rect2i) -> void:
 	WorkerThreadPool.add_task(_country_worker_run.bind(dirty_box))
 
 
-# Worker-thread function: rewrites country_border_bytes for the dirty region, syncs the
-# downsampled mask, runs JFA on the local RenderingDevice, then hands the resulting crop
-# back to the main thread for the actual GPU-side blit + texture upload.
+# Worker-thread function: rewrites country_border_bytes for the dirty region and syncs the
+# downsampled mask (the expensive GDScript pixel loops), then hands the affected region
+# back to the main thread, which runs the GPU JFA + blit + texture upload.
+# The JFA must NOT run here: MapTextureSDF's shared local RenderingDevice is created on
+# the main thread (cold gen / territory refresh) and Godot only allows a RenderingDevice
+# to be used from the thread that created it.
 # Notes on concurrency:
-#  - country_border_bytes / country_border_ds_data: only touched by this worker after init,
-#    so no synchronization needed against the main thread.
+#  - country_border_bytes / country_border_ds_data: written only by this worker after init;
+#    the main thread reads country_border_ds_data only in _country_sdf_apply, which runs
+#    after this task has finished (call_deferred), so there is no concurrent access.
 #  - src_data, width/height/bpp/src_stride: written once at init, then read-only.
-#  - _db.color_to_province: built during DataImporter and never mutated afterwards.
+#  - db.color_to_province: built during DataImporter and never mutated afterwards.
 #  - province.province_owner: can be mutated by main while we read it. Treated as an
 #    eventually-consistent snapshot — if main changes ownership mid-task, the next refresh
 #    will reconcile.
@@ -288,7 +291,7 @@ func _country_worker_run(dirty_box: Rect2i) -> void:
 			var r: int = src_data[src_idx]
 			var g: int = src_data[src_idx + 1]
 			var b: int = src_data[src_idx + 2]
-			var is_country_border: bool = _is_country_border_pixel(x, y, src_idx, r, g, b, owner_cache, _db)
+			var is_country_border: bool = _is_country_border_pixel(x, y, src_idx, r, g, b, owner_cache)
 			country_border_bytes[row + x] = 0 if is_country_border else 255
 
 	var ds_dirty: Rect2i = _full_to_country_ds_rect(dirty_box)
@@ -299,14 +302,16 @@ func _country_worker_run(dirty_box: Rect2i) -> void:
 	var ds_affect_range: int = SDF_AFFECT_RANGE / COUNTRY_SDF_SCALE
 	var affected: Rect2i = ds_dirty.grow(ds_affect_range).intersection(ds_bounds)
 	var crop: Rect2i = affected.grow(ds_affect_range).intersection(ds_bounds)
+
+	_country_sdf_apply.call_deferred(affected, crop)
+
+
+# Runs on the main thread (via call_deferred from the worker): GPU JFA on the downsampled
+# crop, then blit + texture upload. All of this must stay on the main thread — the JFA
+# because of the RenderingDevice thread restriction, the blit/update because they touch
+# rendering resources. The crop is small (4x downsampled), so the main-thread cost is low.
+func _country_sdf_apply(affected: Rect2i, crop: Rect2i) -> void:
 	var crop_data: PackedByteArray = MapTextureSDF.build_sdf_region(country_border_ds_data, country_sdf_width, country_sdf_height, crop)
-
-	_country_sdf_apply.call_deferred(crop_data, affected, crop)
-
-
-# Runs on the main thread (via call_deferred from the worker). Pure Godot rendering work
-# that must stay off the worker thread: Image.blit_rect + ImageTexture.update.
-func _country_sdf_apply(crop_data: PackedByteArray, affected: Rect2i, crop: Rect2i) -> void:
 	var crop_image: Image = Image.create_from_data(crop.size.x, crop.size.y, false, Image.FORMAT_RGBA8, crop_data)
 	var local_affected: Rect2i = Rect2i(affected.position - crop.position, affected.size)
 	country_sdf_image.blit_rect(crop_image, local_affected, affected.position)
@@ -401,15 +406,15 @@ func _is_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int) -> b
 	return false
 
 
-func _is_territory_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary, db: Database) -> bool:
-	var territory: Territory = _cached_territory(r, g, b, _cache, db)
+func _is_territory_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary) -> bool:
+	var territory: Territory = _cached_territory(r, g, b, _cache)
 	for offset in NEIGHBOR_OFFSETS:
 		var nx: int = x + offset.x
 		var ny: int = y + offset.y
 		if nx < 0 or nx >= width or ny < 0 or ny >= height:
 			continue
 		var ni: int = src_idx + offset.x * bpp + offset.y * src_stride
-		if _cached_territory(src_data[ni], src_data[ni + 1], src_data[ni + 2], _cache, db) != territory:
+		if _cached_territory(src_data[ni], src_data[ni + 1], src_data[ni + 2], _cache) != territory:
 			return true
 	return false
 
@@ -417,7 +422,7 @@ func _is_territory_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b:
 # Memoizes the per-color territory lookup so callers can avoid a Color allocation and a
 # Color-keyed dict lookup on every pixel. Each dirty region typically contains only a
 # handful of distinct province colors, so after the first miss the cache is mostly hits.
-func _cached_territory(r: int, g: int, b: int, _cache: Dictionary, db: Database) -> Territory:
+func _cached_territory(r: int, g: int, b: int, _cache: Dictionary) -> Territory:
 	var key: int = (r << 16) | (g << 8) | b
 	if _cache.has(key):
 		return _cache[key]
@@ -427,21 +432,21 @@ func _cached_territory(r: int, g: int, b: int, _cache: Dictionary, db: Database)
 	return territory
 
 
-func _is_country_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary, db: Database) -> bool:
-	var owner: Country = _cached_owner(r, g, b, _cache, db)
+func _is_country_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary) -> bool:
+	var owner: Country = _cached_owner(r, g, b, _cache)
 	for offset in NEIGHBOR_OFFSETS:
 		var nx: int = x + offset.x
 		var ny: int = y + offset.y
 		if nx < 0 or nx >= width or ny < 0 or ny >= height:
 			continue
 		var ni: int = src_idx + offset.x * bpp + offset.y * src_stride
-		if _cached_owner(src_data[ni], src_data[ni + 1], src_data[ni + 2], _cache, db) != owner:
+		if _cached_owner(src_data[ni], src_data[ni + 1], src_data[ni + 2], _cache) != owner:
 			return true
 	return false
 
 
 # Memoizes the per-color owner lookup. See _cached_territory for the rationale.
-func _cached_owner(r: int, g: int, b: int, _cache: Dictionary, db: Database) -> Country:
+func _cached_owner(r: int, g: int, b: int, _cache: Dictionary) -> Country:
 	var key: int = (r << 16) | (g << 8) | b
 	if _cache.has(key):
 		return _cache[key]
