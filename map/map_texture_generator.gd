@@ -8,11 +8,6 @@ const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 # value the consuming uniforms (country_fade_inwards/outwards, selection_thickness) can hit.
 # Used to derive the JFA crop region from the per-batch dirty rect.
 const SDF_AFFECT_RANGE: int = 128
-# Country SDF is rendered downsampled by this factor on each axis. Only the political-mode
-# fade reads it (smooth gradient, linear-filtered), so coarse data is fine and the JFA cost
-# drops ~SCALE^2. Encoded offsets are in downsampled-texel units; the shader multiplies them
-# back up by country_sdf_scale so fade uniforms stay in full-res pixels.
-const COUNTRY_SDF_SCALE: int = 4
 
 var lookup_texture: ImageTexture
 var border_texture: ImageTexture
@@ -32,11 +27,6 @@ var territory_border_image: Image
 var country_border_image: Image
 var territory_sdf_image: Image
 var country_sdf_image: Image
-
-# Downsampled mirror of country_border_image; the actual JFA input. Re-derived by the
-# country SDF worker for the affected ds-region on every refresh — never touched by the
-# main thread after init.
-var country_border_ds_data: PackedByteArray
 
 # Raw byte mirrors of the L8 border masks. The territory variant is mutated synchronously
 # by update_map_texture on the main thread; the country variant is mutated only by the
@@ -69,10 +59,6 @@ var src_data: PackedByteArray
 var bpp: int
 var src_stride: int
 
-# Downsampled country-SDF dimensions (width/height divided by COUNTRY_SDF_SCALE).
-var country_sdf_width: int
-var country_sdf_height: int
-
 var cache: MapTextureCache
 
 
@@ -85,10 +71,6 @@ func _init(p_province_image: Image, p_db: Database) -> void:
 	@warning_ignore("integer_division")
 	bpp = src_data.size() / (width * height)
 	src_stride = width * bpp
-	@warning_ignore("integer_division")
-	country_sdf_width = width / COUNTRY_SDF_SCALE
-	@warning_ignore("integer_division")
-	country_sdf_height = height / COUNTRY_SDF_SCALE
 	cache = MapTextureCache.new(src_data)
 
 
@@ -116,7 +98,6 @@ func _load_from_cache() -> void:
 	territory_sdf_texture = ImageTexture.create_from_image(territory_sdf_image)
 	country_sdf_image = cache.load_country_sdf()
 	country_sdf_texture = ImageTexture.create_from_image(country_sdf_image)
-	country_border_ds_data = _downsample_country_border(country_border_bytes)
 	cache.load_color_map(db)
 
 
@@ -188,10 +169,9 @@ func _generate() -> void:
 	territory_sdf_image = MapTextureSDF.build_sdf(territory_border_data, width, height)
 	print("  Territory SDF (GPU JFA) - End")
 	territory_sdf_texture = ImageTexture.create_from_image(territory_sdf_image)
-	print("  Country SDF (GPU JFA, %dx downsample) - Start" % COUNTRY_SDF_SCALE)
-	country_border_ds_data = _downsample_country_border(country_border_data)
-	country_sdf_image = MapTextureSDF.build_sdf(country_border_ds_data, country_sdf_width, country_sdf_height)
-	print("  Country SDF (GPU JFA, %dx downsample) - End" % COUNTRY_SDF_SCALE)
+	print("  Country SDF (GPU JFA) - Start")
+	country_sdf_image = MapTextureSDF.build_sdf(country_border_data, width, height)
+	print("  Country SDF (GPU JFA) - End")
 	country_sdf_texture = ImageTexture.create_from_image(country_sdf_image)
 	cache.save(lut_image, border_image, territory_border_image, country_border_image, province_sdf_image, territory_sdf_image, country_sdf_image, db)
 
@@ -262,16 +242,16 @@ func _start_country_worker(dirty_box: Rect2i) -> void:
 	WorkerThreadPool.add_task(_country_worker_run.bind(dirty_box))
 
 
-# Worker-thread function: rewrites country_border_bytes for the dirty region and syncs the
-# downsampled mask (the expensive GDScript pixel loops), then hands the affected region
-# back to the main thread, which runs the GPU JFA + blit + texture upload.
+# Worker-thread function: rewrites country_border_bytes for the dirty region (the expensive
+# GDScript pixel loops), then hands the affected region back to the main thread, which runs
+# the GPU JFA + blit + texture upload.
 # The JFA must NOT run here: MapTextureSDF's shared local RenderingDevice is created on
 # the main thread (cold gen / territory refresh) and Godot only allows a RenderingDevice
 # to be used from the thread that created it.
 # Notes on concurrency:
-#  - country_border_bytes / country_border_ds_data: written only by this worker after init;
-#    the main thread reads country_border_ds_data only in _country_sdf_apply, which runs
-#    after this task has finished (call_deferred), so there is no concurrent access.
+#  - country_border_bytes: written only by this worker after init; the main thread reads it
+#    only in _country_sdf_apply, which runs after this task has finished (call_deferred),
+#    so there is no concurrent access.
 #  - src_data, width/height/bpp/src_stride: written once at init, then read-only.
 #  - db.color_to_province: built during DataImporter and never mutated afterwards.
 #  - province.province_owner: can be mutated by main while we read it. Treated as an
@@ -294,84 +274,21 @@ func _country_worker_run(dirty_box: Rect2i) -> void:
 			var is_country_border: bool = _is_country_border_pixel(x, y, src_idx, r, g, b, owner_cache)
 			country_border_bytes[row + x] = 0 if is_country_border else 255
 
-	var ds_dirty: Rect2i = _full_to_country_ds_rect(dirty_box)
-	_downsample_country_border_region(country_border_bytes, ds_dirty)
-
-	var ds_bounds: Rect2i = Rect2i(0, 0, country_sdf_width, country_sdf_height)
-	@warning_ignore("integer_division")
-	var ds_affect_range: int = SDF_AFFECT_RANGE / COUNTRY_SDF_SCALE
-	var affected: Rect2i = ds_dirty.grow(ds_affect_range).intersection(ds_bounds)
-	var crop: Rect2i = affected.grow(ds_affect_range).intersection(ds_bounds)
-
-	_country_sdf_apply.call_deferred(affected, crop)
+	_country_sdf_apply.call_deferred(dirty_box)
 
 
-# Runs on the main thread (via call_deferred from the worker): GPU JFA on the downsampled
-# crop, then blit + texture upload. All of this must stay on the main thread — the JFA
-# because of the RenderingDevice thread restriction, the blit/update because they touch
-# rendering resources. The crop is small (4x downsampled), so the main-thread cost is low.
-func _country_sdf_apply(affected: Rect2i, crop: Rect2i) -> void:
-	var crop_data: PackedByteArray = MapTextureSDF.build_sdf_region(country_border_ds_data, country_sdf_width, country_sdf_height, crop)
-	var crop_image: Image = Image.create_from_data(crop.size.x, crop.size.y, false, Image.FORMAT_RGBA8, crop_data)
-	var local_affected: Rect2i = Rect2i(affected.position - crop.position, affected.size)
-	country_sdf_image.blit_rect(crop_image, local_affected, affected.position)
-	country_sdf_texture.update(country_sdf_image)
+# Runs on the main thread (via call_deferred from the worker): GPU JFA on the dirty crop,
+# then blit + texture upload. All of this must stay on the main thread — the JFA because
+# of the RenderingDevice thread restriction, the blit/update because they touch rendering
+# resources.
+func _country_sdf_apply(dirty_box: Rect2i) -> void:
+	_refresh_sdf_bounded(country_sdf_image, country_sdf_texture, country_border_bytes, dirty_box)
 
 	_country_worker_busy = false
 	if _country_pending_box.has_area():
 		var next_box: Rect2i = _country_pending_box
 		_country_pending_box = Rect2i()
 		_start_country_worker(next_box)
-
-
-# Conservatively converts a full-res rect to the smallest downsampled rect that covers
-# every ds-pixel touching it. Clamped to the downsampled image bounds.
-func _full_to_country_ds_rect(full: Rect2i) -> Rect2i:
-	var s: int = COUNTRY_SDF_SCALE
-	var ds_bounds: Rect2i = Rect2i(0, 0, country_sdf_width, country_sdf_height)
-	@warning_ignore("integer_division")
-	var x0: int = full.position.x / s
-	@warning_ignore("integer_division")
-	var y0: int = full.position.y / s
-	@warning_ignore("integer_division")
-	var x1: int = (full.position.x + full.size.x - 1) / s
-	@warning_ignore("integer_division")
-	var y1: int = (full.position.y + full.size.y - 1) / s
-	return Rect2i(x0, y0, x1 - x0 + 1, y1 - y0 + 1).intersection(ds_bounds)
-
-
-# Builds a fresh downsampled mask from the full-res border bytes. A ds-pixel is marked as
-# border (0) iff any of the SCALExSCALE source pixels covering it is a border pixel.
-func _downsample_country_border(full_data: PackedByteArray) -> PackedByteArray:
-	country_border_ds_data = PackedByteArray()
-	country_border_ds_data.resize(country_sdf_width * country_sdf_height)
-	_downsample_country_border_region(full_data, Rect2i(0, 0, country_sdf_width, country_sdf_height))
-	return country_border_ds_data
-
-
-# Writes ds-pixels inside `ds_region` (in downsampled coords) by min-pooling the full-res mask.
-# Writes go directly into country_border_ds_data to avoid PackedByteArray copy-on-write surprises.
-func _downsample_country_border_region(full_data: PackedByteArray, ds_region: Rect2i) -> void:
-	var s: int = COUNTRY_SDF_SCALE
-	for ly in range(ds_region.size.y):
-		var ds_y: int = ds_region.position.y + ly
-		var fy0: int = ds_y * s
-		var fy1: int = min(fy0 + s, height)
-		var ds_row: int = ds_y * country_sdf_width
-		for lx in range(ds_region.size.x):
-			var ds_x: int = ds_region.position.x + lx
-			var fx0: int = ds_x * s
-			var fx1: int = min(fx0 + s, width)
-			var is_border: int = 255
-			for fy in range(fy0, fy1):
-				var full_row: int = fy * width
-				for fx in range(fx0, fx1):
-					if full_data[full_row + fx] == 0:
-						is_border = 0
-						break
-				if is_border == 0:
-					break
-			country_border_ds_data[ds_row + ds_x] = is_border
 
 
 # Runs JFA on the smallest crop containing every pixel whose SDF could have changed
@@ -432,8 +349,13 @@ func _cached_territory(r: int, g: int, b: int, _cache: Dictionary) -> Territory:
 	return territory
 
 
+# One-sided: only owned pixels are marked, so unowned pixels adjacent to a country are NOT
+# border. This way the SDF's RG offset always points at a pixel carrying the owner's color,
+# which map2d.gdshader relies on to bleed the country color outwards across the border.
 func _is_country_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary) -> bool:
 	var owner: Country = _cached_owner(r, g, b, _cache)
+	if owner == null:
+		return false
 	for offset in NEIGHBOR_OFFSETS:
 		var nx: int = x + offset.x
 		var ny: int = y + offset.y

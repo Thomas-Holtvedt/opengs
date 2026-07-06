@@ -2,13 +2,16 @@ extends Resource
 class_name MapTextureCache
 
 const CACHE_DIR: String = "user://map_cache"
+# Bump whenever the generated content changes for the same source image (mask semantics,
+# SDF encoding, downsampling, ...) so stale caches regenerate instead of being loaded.
+const CACHE_VERSION: int = 2
 const LOOKUP_FILE: String = "lookup_texture.png"
 const BORDER_FILE: String = "border_texture.png"
 const TERRITORY_BORDER_FILE: String = "territory_border_texture.png"
 const COUNTRY_BORDER_FILE: String = "country_border_texture.png"
 const PROVINCE_SDF_FILE: String = "province_sdf_texture.png"
 const TERRITORY_SDF_FILE: String = "territory_sdf_texture.png"
-const COUNTRY_SDF_FILE: String = "country_sdf_texture_4x_dist.png"
+const COUNTRY_SDF_FILE: String = "country_sdf_texture_dist.png"
 const COLOR_MAP_FILE: String = "province_color_to_lookup.data"
 
 var cache_id: String
@@ -16,7 +19,7 @@ var available: bool
 
 
 func _init(src_data: PackedByteArray) -> void:
-	cache_id = Marshalls.raw_to_base64(src_data).md5_text()
+	cache_id = Marshalls.raw_to_base64(src_data).md5_text() + "_v%d" % CACHE_VERSION
 	available = FileAccess.file_exists(_cache_path(LOOKUP_FILE)) \
 			and FileAccess.file_exists(_cache_path(BORDER_FILE)) \
 			and FileAccess.file_exists(_cache_path(TERRITORY_BORDER_FILE)) \
