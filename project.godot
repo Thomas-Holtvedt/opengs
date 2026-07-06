@@ -17,7 +17,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 config/name="Open Grand Strategy"
 config/description="This open-source Grand Strategy game is built to emulate the style made popular by Paradox and similar games."
 run/main_scene="uid://uwfcduh1f75g"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="uid://cfas4ed0a21np"
 
 [display]

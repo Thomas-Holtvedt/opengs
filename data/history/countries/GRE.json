@@ -1,9 +1,9 @@
 {
-	"base_name": "",
+	"base_name": "Greece",
 	"ideology": "DEMOCRACY",
 	"map_color": [
 		0.0,
-		0.0,
-		0.0
+		0.90625,
+		1.0
 	]
 }
