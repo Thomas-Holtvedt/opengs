@@ -1,7 +1,8 @@
 extends StaticBody3D
 class_name Map
 
-const SELECTION_PULSE_BASELINE: float = 1.0
+# Must match the material's resting selection_thickness (map2D.tres).
+const SELECTION_PULSE_BASELINE: float = 0.0
 const SELECTION_PULSE_PEAK: float = 6.0
 const SELECTION_PULSE_HALF_PERIOD: float = 0.2
 
@@ -43,6 +44,7 @@ func create_map_textures() -> void:
 	@warning_ignore("integer_division")
 	province_image_offset = Vector2i(province_image.get_width() / 2, province_image.get_height() / 2)
 	texture_generator = MapTextureGenerator.new(province_image, db)
+	texture_generator.selection_sdf_ready.connect(_apply_selection_sdf)
 	texture_generator.create_map_textures()
 	texture_generator.set_map_textures(map_material_2d)
 
@@ -150,6 +152,25 @@ func highlight_provinces(provinces: Array[Province]) -> void:
 		current_highlight.remove_highlights(current_map_mode)
 	current_highlight = MapHighlight.new(provinces)
 	current_highlight.apply_highlights(current_map_mode)
+	texture_generator.update_selection_sdf(provinces)
+	update_map()
+
+
+# Runs when the async selection SDF build finishes — typically the frame after the click.
+# Until then the previous selection's ring stays visible, so there is never a blank gap.
+func _apply_selection_sdf() -> void:
+	map_material_2d.set_shader_parameter("selection_province_sdf", texture_generator.selection_province_sdf_texture)
+	map_material_2d.set_shader_parameter("selection_territory_sdf", texture_generator.selection_territory_sdf_texture)
+	var rect: Rect2i = texture_generator.selection_rect
+	map_material_2d.set_shader_parameter("selection_sdf_rect", Vector4(
+			rect.position.x, rect.position.y, rect.size.x, rect.size.y))
+
+
+func clear_selection() -> void:
+	if current_highlight != null:
+		current_highlight.remove_highlights(current_map_mode)
+		current_highlight = null
+	map_material_2d.set_shader_parameter("selection_sdf_rect", Vector4())
 	update_map()
 
 

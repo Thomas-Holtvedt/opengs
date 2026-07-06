@@ -11,6 +11,10 @@ var type: Type
 var terrain: Terrain
 var center: Vector2i
 var bounding_radius: int = 150
+# Exact pixel-space bounding box on the province map, measured during map generation and
+# cached with the map textures (MapTextureGenerator). Empty until the map has been built;
+# callers should fall back to center/bounding_radius when it has no area.
+var pixel_bounds: Rect2i
 
 # Setters keep the back-references (Territory.provinces, Country.owned_provinces) in sync.
 var territory: Territory:

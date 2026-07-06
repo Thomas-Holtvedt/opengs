@@ -1,6 +1,10 @@
 
 class_name MapTextureGenerator
 
+# Emitted on the main thread when an async selection SDF build has finished and the
+# selection_*_sdf_texture / selection_rect members are safe to bind.
+signal selection_sdf_ready
+
 const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 	Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)
 ]
@@ -8,6 +12,10 @@ const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 # value the consuming uniforms (country_fade_inwards/outwards, selection_thickness) can hit.
 # Used to derive the JFA crop region from the per-batch dirty rect.
 const SDF_AFFECT_RANGE: int = 128
+# Padding around the selection's bounding box when building the selection SDF crop. Must
+# comfortably exceed the widest ring the shader can draw (selection_thickness at its pulse
+# peak + selection_fade).
+const SELECTION_MARGIN: int = 24
 
 var lookup_texture: ImageTexture
 var border_texture: ImageTexture
@@ -15,6 +23,20 @@ var territory_border_texture: ImageTexture
 var province_sdf_texture: ImageTexture
 var territory_sdf_texture: ImageTexture
 var country_sdf_texture: ImageTexture
+
+# Crop-sized SDFs around the current selection, rebuilt from scratch on every selection
+# change (update_selection_sdf). The shader draws the green province ring and white
+# territory ring purely from these — smooth at any zoom, no per-fragment border heuristics.
+var selection_province_sdf_texture: ImageTexture
+var selection_territory_sdf_texture: ImageTexture
+var selection_rect: Rect2i
+
+# Async selection SDF state (main-thread-only, same pattern as the country SDF worker).
+# The request id makes newer selections win: a finishing worker only publishes if its id is
+# still current, and _selection_pending holds the latest superseding request.
+var _selection_worker_busy: bool = false
+var _selection_request_id: int = 0
+var _selection_pending: Array[Province] = []
 # Note: there is no country_border_texture. country_border_image is kept around purely so
 # we can write the L8 mask into the disk cache during cold gen, but the shader has no
 # country_border_image uniform — only country_sdf_image is sampled. Re-uploading the L8
@@ -99,6 +121,18 @@ func _load_from_cache() -> void:
 	country_sdf_image = cache.load_country_sdf()
 	country_sdf_texture = ImageTexture.create_from_image(country_sdf_image)
 	cache.load_color_map(db)
+	_apply_province_bounds(cache.load_province_bounds())
+
+
+# Writes measured pixel bounds onto the Province objects. Keys are packed RGB province
+# colors ((r << 16) | (g << 8) | b), matching _selection_color_key.
+func _apply_province_bounds(province_bounds: Dictionary) -> void:
+	for key: int in province_bounds:
+		var color: Color = Color(
+				((key >> 16) & 0xFF) / 255.0, ((key >> 8) & 0xFF) / 255.0, (key & 0xFF) / 255.0)
+		var province: Province = db.color_to_province.get(color)
+		if province != null:
+			province.pixel_bounds = province_bounds[key]
 
 
 func _generate() -> void:
@@ -121,6 +155,21 @@ func _generate() -> void:
 	var territory_cache: Dictionary[int, Territory] = {}
 	var owner_cache: Dictionary[int, Country] = {}
 
+	# Exact per-province pixel bounds, accumulated per lookup index (lookup.y * 256 +
+	# lookup.x). Packed arrays instead of a Dictionary keep the per-pixel cost to compares.
+	var bounds_min_x: PackedInt32Array = PackedInt32Array()
+	bounds_min_x.resize(65536)
+	bounds_min_x.fill(width)
+	var bounds_min_y: PackedInt32Array = PackedInt32Array()
+	bounds_min_y.resize(65536)
+	bounds_min_y.fill(height)
+	var bounds_max_x: PackedInt32Array = PackedInt32Array()
+	bounds_max_x.resize(65536)
+	bounds_max_x.fill(-1)
+	var bounds_max_y: PackedInt32Array = PackedInt32Array()
+	bounds_max_y.resize(65536)
+	bounds_max_y.fill(-1)
+
 	for y in range(height):
 		for x in range(width):
 			var src_idx: int = y * src_stride + x * bpp
@@ -142,6 +191,16 @@ func _generate() -> void:
 			var lookup: Vector2i = color_key_to_lookup[key]
 			lut_data[lut_idx] = lookup.x
 			lut_data[lut_idx + 1] = lookup.y
+
+			var bounds_idx: int = lookup.y * 256 + lookup.x
+			if x < bounds_min_x[bounds_idx]:
+				bounds_min_x[bounds_idx] = x
+			if x > bounds_max_x[bounds_idx]:
+				bounds_max_x[bounds_idx] = x
+			if y < bounds_min_y[bounds_idx]:
+				bounds_min_y[bounds_idx] = y
+			if y > bounds_max_y[bounds_idx]:
+				bounds_max_y[bounds_idx] = y
 
 			var is_border: bool = _is_border_pixel(x, y, src_idx, r, g, b)
 			border_data[border_idx] = 0 if is_border else 255
@@ -173,7 +232,20 @@ func _generate() -> void:
 	country_sdf_image = MapTextureSDF.build_sdf(country_border_data, width, height)
 	print("  Country SDF (GPU JFA) - End")
 	country_sdf_texture = ImageTexture.create_from_image(country_sdf_image)
-	cache.save(lut_image, border_image, territory_border_image, country_border_image, province_sdf_image, territory_sdf_image, country_sdf_image, db)
+
+	var province_bounds: Dictionary[int, Rect2i] = {}
+	for key: int in color_key_to_lookup:
+		var lookup: Vector2i = color_key_to_lookup[key]
+		var bounds_idx: int = lookup.y * 256 + lookup.x
+		if bounds_max_x[bounds_idx] < 0:
+			continue
+		province_bounds[key] = Rect2i(
+				bounds_min_x[bounds_idx], bounds_min_y[bounds_idx],
+				bounds_max_x[bounds_idx] - bounds_min_x[bounds_idx] + 1,
+				bounds_max_y[bounds_idx] - bounds_min_y[bounds_idx] + 1)
+	_apply_province_bounds(province_bounds)
+
+	cache.save(lut_image, border_image, territory_border_image, country_border_image, province_sdf_image, territory_sdf_image, country_sdf_image, province_bounds, db)
 
 
 func update_map_texture(center: Vector2i, radius: int, refresh: bool = true) -> void:
@@ -289,6 +361,143 @@ func _country_sdf_apply(dirty_box: Rect2i) -> void:
 		var next_box: Rect2i = _country_pending_box
 		_country_pending_box = Rect2i()
 		_start_country_worker(next_box)
+
+
+# Rebuilds the selection SDFs for the given provinces: one distance field around the union
+# of the selected provinces' boundaries, one around their territories' outer boundary. The
+# expensive pixel passes run on a WorkerThreadPool task; selection_sdf_ready is emitted once
+# the textures are live (typically the next frame, since the crop uses exact pixel bounds).
+# A newer call while a build is in flight supersedes it — stale results are never shown.
+func update_selection_sdf(provinces: Array[Province]) -> void:
+	_selection_request_id += 1
+	if _selection_worker_busy:
+		_selection_pending = provinces.duplicate()
+		return
+	_start_selection_worker(provinces, _selection_request_id)
+
+
+# Resolves everything that touches game objects (provinces, territories) here on the main
+# thread; the worker only reads src_data (immutable after init) and the plain dictionaries
+# built here.
+func _start_selection_worker(provinces: Array[Province], request_id: int) -> void:
+	_selection_worker_busy = true
+	var prov_keys: Dictionary[int, bool] = {}
+	var terr_keys: Dictionary[int, bool] = {}
+	var box: Rect2i = _province_box(provinces[0])
+	for province in provinces:
+		prov_keys[_selection_color_key(province.color)] = true
+		box = box.merge(_province_box(province))
+		if province.territory == null:
+			continue
+		for t_province in province.territory.provinces:
+			terr_keys[_selection_color_key(t_province.color)] = true
+			box = box.merge(_province_box(t_province))
+	box = box.grow(SELECTION_MARGIN).intersection(Rect2i(0, 0, width, height))
+	WorkerThreadPool.add_task(_selection_worker_run.bind(prov_keys, terr_keys, box, request_id))
+
+
+# Worker-thread function: the per-pixel membership and boundary-mask passes. The GPU JFA
+# must NOT run here (RenderingDevice thread restriction) — the masks are handed back to the
+# main thread via call_deferred.
+func _selection_worker_run(prov_keys: Dictionary[int, bool], terr_keys: Dictionary[int, bool], box: Rect2i, request_id: int) -> void:
+	var cw: int = box.size.x
+	var ch: int = box.size.y
+
+	# Pass 1: membership byte per crop pixel (bit 1 = selected province, bit 2 = territory),
+	# memoized per province color so the src_data key extraction runs once per pixel.
+	var membership: PackedByteArray = PackedByteArray()
+	membership.resize(cw * ch)
+	var memo: Dictionary[int, int] = {}
+	for ly in range(ch):
+		var gy: int = box.position.y + ly
+		var src_row: int = gy * src_stride
+		var local_row: int = ly * cw
+		for lx in range(cw):
+			var si: int = src_row + (box.position.x + lx) * bpp
+			var key: int = (src_data[si] << 16) | (src_data[si + 1] << 8) | src_data[si + 2]
+			var m: int
+			if memo.has(key):
+				m = memo[key]
+			else:
+				m = (1 if prov_keys.has(key) else 0) | (2 if terr_keys.has(key) else 0)
+				memo[key] = m
+			membership[local_row + lx] = m
+
+	# Pass 2: two-sided boundary masks (0 = boundary seed, 255 = empty) from membership
+	# transitions. Two-sided keeps the distance field symmetric around the true boundary,
+	# which sits half a pixel past the seed row on each side (the shader adds the 0.5).
+	var prov_mask: PackedByteArray = PackedByteArray()
+	prov_mask.resize(cw * ch)
+	prov_mask.fill(255)
+	var terr_mask: PackedByteArray = PackedByteArray()
+	terr_mask.resize(cw * ch)
+	terr_mask.fill(255)
+	for ly in range(ch):
+		var local_row: int = ly * cw
+		for lx in range(cw):
+			var idx: int = local_row + lx
+			var m: int = membership[idx]
+			var diff: int = 0
+			if lx > 0:
+				diff |= m ^ membership[idx - 1]
+			if lx < cw - 1:
+				diff |= m ^ membership[idx + 1]
+			if ly > 0:
+				diff |= m ^ membership[idx - cw]
+			if ly < ch - 1:
+				diff |= m ^ membership[idx + cw]
+			if diff & 1:
+				prov_mask[idx] = 0
+			if diff & 2:
+				terr_mask[idx] = 0
+
+	_selection_sdf_apply.call_deferred(prov_mask, terr_mask, box, terr_keys.is_empty(), request_id)
+
+
+# Main thread (via call_deferred from the worker): GPU JFA + texture creation, then publish
+# through selection_sdf_ready — unless a newer selection arrived while the worker ran, in
+# which case this result is dropped and the pending request starts immediately.
+func _selection_sdf_apply(prov_mask: PackedByteArray, terr_mask: PackedByteArray, box: Rect2i, no_territory: bool, request_id: int) -> void:
+	_selection_worker_busy = false
+	if request_id == _selection_request_id:
+		var cw: int = box.size.x
+		var ch: int = box.size.y
+		var crop: Rect2i = Rect2i(0, 0, cw, ch)
+		var prov_bytes: PackedByteArray = MapTextureSDF.build_sdf_region(prov_mask, cw, ch, crop)
+		selection_province_sdf_texture = ImageTexture.create_from_image(
+				Image.create_from_data(cw, ch, false, Image.FORMAT_RGBA8, prov_bytes))
+		if no_territory:
+			selection_territory_sdf_texture = _far_sdf_texture()
+		else:
+			var terr_bytes: PackedByteArray = MapTextureSDF.build_sdf_region(terr_mask, cw, ch, crop)
+			selection_territory_sdf_texture = ImageTexture.create_from_image(
+					Image.create_from_data(cw, ch, false, Image.FORMAT_RGBA8, terr_bytes))
+		selection_rect = box
+		selection_sdf_ready.emit()
+	if not _selection_pending.is_empty():
+		var next: Array[Province] = _selection_pending
+		_selection_pending = []
+		_start_selection_worker(next, _selection_request_id)
+
+
+# Exact measured bounds when the map generator has produced them; the conservative
+# center/bounding_radius square otherwise.
+func _province_box(province: Province) -> Rect2i:
+	if province.pixel_bounds.has_area():
+		return province.pixel_bounds
+	var r: int = province.bounding_radius
+	return Rect2i(province.center.x - r, province.center.y - r, r * 2 + 1, r * 2 + 1)
+
+
+func _selection_color_key(color: Color) -> int:
+	return (int(round(color.r * 255.0)) << 16) | (int(round(color.g * 255.0)) << 8) | int(round(color.b * 255.0))
+
+
+# 1x1 "everything is far away" SDF stand-in, used when the selection has no territory so
+# the white ring stays hidden. Matches the jfa_encode sentinel encoding (B = max distance).
+func _far_sdf_texture() -> ImageTexture:
+	var data: PackedByteArray = PackedByteArray([128, 128, 255, 255])
+	return ImageTexture.create_from_image(Image.create_from_data(1, 1, false, Image.FORMAT_RGBA8, data))
 
 
 # Runs JFA on the smallest crop containing every pixel whose SDF could have changed

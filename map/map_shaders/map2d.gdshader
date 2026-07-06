@@ -7,6 +7,13 @@ uniform sampler2D territory_border_image: source_color, filter_nearest;
 uniform sampler2D province_sdf_image: filter_linear;
 uniform sampler2D territory_sdf_image: filter_linear;
 uniform sampler2D country_sdf_image: filter_linear;
+// Crop-sized SDFs around the current selection (MapTextureGenerator.update_selection_sdf):
+// distance to the selected province boundary / its territory boundary.
+uniform sampler2D selection_province_sdf: filter_linear;
+uniform sampler2D selection_territory_sdf: filter_linear;
+// Where the selection SDF crop sits in map pixels: xy = origin, zw = size. zw = 0 → nothing
+// is selected and the ring pass is skipped entirely.
+uniform vec4 selection_sdf_rect = vec4(0.0);
 
 uniform float selection_thickness: hint_range(0.0, 16.0) = 2.0;
 // How far the selection ring fades out past its solid core. The ring is centered on the
@@ -51,33 +58,6 @@ float ring_profile(float boundary_dist) {
 	return 1.0 - smoothstep(selection_thickness, selection_thickness + max(selection_fade, 0.001), boundary_dist);
 }
 
-// Samples the highlight layer of the color map at the given map UV.
-vec3 highlight_at(vec2 uv, ivec2 cm_size, int num_rows) {
-	ivec2 l = lut_coords(texture(lookup_image, uv).rgb);
-	return texture(color_map_image, cm_uv(l.x, l.y + 2 * num_rows, cm_size)).rgb;
-}
-
-// Whether the selection lies just across the border this SDF offset points to. With
-// want_green, only the selected province (green highlight) counts; otherwise any highlight
-// does. Inside the two-sided border band the offset is zero, so the 4-neighborhood is
-// tapped instead of stepping across.
-bool selection_across(vec2 off, float dist, vec2 uv, vec2 map_size, bool want_green, ivec2 cm_size, int num_rows) {
-	vec3 hl;
-	if (dist < 0.5) {
-		vec2 texel = 1.0 / map_size;
-		hl = highlight_at(uv + vec2(texel.x, 0.0), cm_size, num_rows);
-		hl = max(hl, highlight_at(uv - vec2(texel.x, 0.0), cm_size, num_rows));
-		hl = max(hl, highlight_at(uv + vec2(0.0, texel.y), cm_size, num_rows));
-		hl = max(hl, highlight_at(uv - vec2(0.0, texel.y), cm_size, num_rows));
-	} else {
-		// Step 1.5px past the nearest border pixel to land on the far side of the border.
-		hl = highlight_at(uv + (off + off / dist * 1.5) / map_size, cm_size, num_rows);
-	}
-	if (want_green) {
-		return length(hl) > 0.01 && hl.r < 0.9;
-	}
-	return length(hl) > 0.01;
-}
 
 void fragment() {
 	// Variables
@@ -99,7 +79,6 @@ void fragment() {
 
 	vec4 map_mode_primary = texture(color_map_image, cm_uv(lut.x, lut.y, cm_size));
 	vec4 map_mode_secondary = texture(color_map_image, cm_uv(lut.x, lut.y + num_rows, cm_size));
-	vec4 selected_color = texture(color_map_image, cm_uv(lut.x, lut.y + 2 * num_rows, cm_size));
 
 	// Set checkers
 	vec4 final_color = mix(map_mode_primary, map_mode_secondary, float(checkers_pattern));
@@ -143,37 +122,23 @@ void fragment() {
 		}
 	}
 
-	// Selection rings: green around the selected province, white around its territory. Both
-	// rings are centered on their boundary (see ring_profile). Pixels on the selected side
-	// know from their own highlight color; pixels on the far side find the selection across
-	// the border via selection_across. Ring colors must match MapHighlight.province_hl /
-	// territory_hl.
-	vec4 prov_sdf = texture(province_sdf_image, UV);
-	vec4 terr_sdf = texture(territory_sdf_image, UV);
-	vec2 prov_off = prov_sdf.rg * 255.0 - 128.0;
-	vec2 terr_off = terr_sdf.rg * 255.0 - 128.0;
-	// B-channel scalar distance, shifted by 0.5 so it measures to the true geometric
-	// boundary (the seed rows sit half a pixel inside each side). This keeps the ring
-	// profile continuous across the boundary and smooth under magnification.
-	float prov_dist = prov_sdf.b * SDF_DIST_MAX + 0.5;
-	float terr_dist = terr_sdf.b * SDF_DIST_MAX + 0.5;
-	float ring_reach = selection_thickness + selection_fade + 1.0;
-	bool own_sel = length(selected_color.rgb) > 0.01;
-	vec2 map_size = vec2(texture_width, texture_height);
-
-	bool near_green = own_sel && selected_color.r < 0.9;
-	if (!near_green && prov_dist <= ring_reach) {
-		// selection_across needs the RG-offset length, not the shifted B distance: it
-		// detects the zero-offset seed band and steps along the offset direction.
-		near_green = selection_across(prov_off, length(prov_off), UV, map_size, true, cm_size, num_rows);
+	// Selection rings: green around the selected province, white around its territory, read
+	// from the dedicated selection SDF crop. The B-channel scalar distance is shifted by
+	// 0.5 so it measures to the true geometric boundary (the seed rows sit half a pixel
+	// inside each side) — see ring_profile for how that enables sub-pixel-thin lines.
+	// Ring colors must match MapHighlight.province_hl / territory_hl.
+	float green_alpha = 0.0;
+	float white_alpha = 0.0;
+	if (selection_sdf_rect.z > 0.5) {
+		vec2 map_px = UV * vec2(texture_width, texture_height);
+		vec2 sel_uv = (map_px - selection_sdf_rect.xy) / selection_sdf_rect.zw;
+		if (all(greaterThanEqual(sel_uv, vec2(0.0))) && all(lessThan(sel_uv, vec2(1.0)))) {
+			float prov_dist = texture(selection_province_sdf, sel_uv).b * SDF_DIST_MAX + 0.5;
+			float terr_dist = texture(selection_territory_sdf, sel_uv).b * SDF_DIST_MAX + 0.5;
+			green_alpha = ring_profile(prov_dist);
+			white_alpha = ring_profile(terr_dist);
+		}
 	}
-	bool near_white = own_sel;
-	if (!near_white && terr_dist <= ring_reach) {
-		near_white = selection_across(terr_off, length(terr_off), UV, map_size, false, cm_size, num_rows);
-	}
-
-	float green_alpha = near_green ? ring_profile(prov_dist) : 0.0;
-	float white_alpha = near_white ? ring_profile(terr_dist) : 0.0;
 
 	// Green composites over white, then the rings source-over the base in straight alpha
 	// (see the country bleed note above — mix()+max() would double-darken soft edges).

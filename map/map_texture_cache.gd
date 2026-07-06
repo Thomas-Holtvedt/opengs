@@ -4,7 +4,7 @@ class_name MapTextureCache
 const CACHE_DIR: String = "user://map_cache"
 # Bump whenever the generated content changes for the same source image (mask semantics,
 # SDF encoding, downsampling, ...) so stale caches regenerate instead of being loaded.
-const CACHE_VERSION: int = 2
+const CACHE_VERSION: int = 3
 const LOOKUP_FILE: String = "lookup_texture.png"
 const BORDER_FILE: String = "border_texture.png"
 const TERRITORY_BORDER_FILE: String = "territory_border_texture.png"
@@ -13,6 +13,7 @@ const PROVINCE_SDF_FILE: String = "province_sdf_texture.png"
 const TERRITORY_SDF_FILE: String = "territory_sdf_texture.png"
 const COUNTRY_SDF_FILE: String = "country_sdf_texture_dist.png"
 const COLOR_MAP_FILE: String = "province_color_to_lookup.data"
+const PROVINCE_BOUNDS_FILE: String = "province_bounds.data"
 
 var cache_id: String
 var available: bool
@@ -27,7 +28,8 @@ func _init(src_data: PackedByteArray) -> void:
 			and FileAccess.file_exists(_cache_path(PROVINCE_SDF_FILE)) \
 			and FileAccess.file_exists(_cache_path(TERRITORY_SDF_FILE)) \
 			and FileAccess.file_exists(_cache_path(COUNTRY_SDF_FILE)) \
-			and FileAccess.file_exists(_cache_path(COLOR_MAP_FILE))
+			and FileAccess.file_exists(_cache_path(COLOR_MAP_FILE)) \
+			and FileAccess.file_exists(_cache_path(PROVINCE_BOUNDS_FILE))
 
 
 func load_lookup() -> Image:
@@ -67,7 +69,19 @@ func load_color_map(db: Database) -> void:
 	file.close()
 
 
-func save(lookup_image: Image, border_image: Image, territory_border_image: Image, country_border_image: Image, province_sdf_image: Image, territory_sdf_image: Image, country_sdf_image: Image, db: Database) -> void:
+# Packed-RGB province color -> exact pixel bounds, measured during generation. Returns an
+# empty Dictionary when the file is missing or unreadable.
+func load_province_bounds() -> Dictionary:
+	var file: FileAccess = FileAccess.open(_cache_path(PROVINCE_BOUNDS_FILE), FileAccess.READ)
+	if file == null:
+		push_error("Failed to open: " + _cache_path(PROVINCE_BOUNDS_FILE))
+		return {}
+	var bounds: Dictionary = str_to_var(file.get_as_text())
+	file.close()
+	return bounds
+
+
+func save(lookup_image: Image, border_image: Image, territory_border_image: Image, country_border_image: Image, province_sdf_image: Image, territory_sdf_image: Image, country_sdf_image: Image, province_bounds: Dictionary, db: Database) -> void:
 	DirAccess.make_dir_recursive_absolute(CACHE_DIR + "/" + cache_id)
 	lookup_image.save_png(_cache_path(LOOKUP_FILE))
 	border_image.save_png(_cache_path(BORDER_FILE))
@@ -76,6 +90,12 @@ func save(lookup_image: Image, border_image: Image, territory_border_image: Imag
 	province_sdf_image.save_png(_cache_path(PROVINCE_SDF_FILE))
 	territory_sdf_image.save_png(_cache_path(TERRITORY_SDF_FILE))
 	country_sdf_image.save_png(_cache_path(COUNTRY_SDF_FILE))
+	var bounds_file: FileAccess = FileAccess.open(_cache_path(PROVINCE_BOUNDS_FILE), FileAccess.WRITE)
+	if bounds_file == null:
+		push_error("Failed to open: " + _cache_path(PROVINCE_BOUNDS_FILE))
+	else:
+		bounds_file.store_string(var_to_str(province_bounds))
+		bounds_file.close()
 	var file: FileAccess = FileAccess.open(_cache_path(COLOR_MAP_FILE), FileAccess.WRITE)
 	if file == null:
 		push_error("Failed to open: " + _cache_path(COLOR_MAP_FILE))
