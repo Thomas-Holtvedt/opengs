@@ -8,7 +8,6 @@ enum Type {POLITICAL, IDEOLOGY, TERRITORY, PROVINCE, TERRAIN}
 const PRIMARY_OFFSET: int = 0
 var type: Type
 var secondary_offset: int
-var highlight_offset: int
 var _province_color_to_lookup: Dictionary[Color, Color]
 var color_map: Image
 
@@ -17,9 +16,8 @@ func _init(province_color_to_lookup: Dictionary[Color, Color], color_to_province
 	var num_lookup_rows: int = maxi(1, ceili(float(province_color_to_lookup.size()) / 256.0))
 	self.type = mode_type
 	secondary_offset = num_lookup_rows
-	highlight_offset = 2 * num_lookup_rows
 	self._province_color_to_lookup = province_color_to_lookup
-	color_map = Image.create(256, 3 * num_lookup_rows, false, Image.FORMAT_RGB8)
+	color_map = Image.create(256, 2 * num_lookup_rows, false, Image.FORMAT_RGB8)
 	for province_color: Color in province_color_to_lookup:
 		if color_to_province.has(province_color):
 			update_province(color_to_province[province_color])

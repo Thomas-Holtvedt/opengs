@@ -49,8 +49,9 @@ func set_terrain(index: int) -> void:
 func set_territory(new_territory: Territory) -> void:
 	for province: Province in selection.selected_provinces:
 		province.territory = new_territory
-		map.update_map_texture(province, false)
-	map.refresh_territory_sdf()
+	# The white territory ring is drawn from the selection SDF, so rebuilding it is all a
+	# territory change needs — there is no full-map territory texture anymore.
+	map.refresh_selection()
 
 
 func _set_owner_of(provinces: Array[Province], new_owner: Country) -> void:

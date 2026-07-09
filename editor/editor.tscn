@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://c3qoli5ipe8qr" path="res://editor/controller/controller.tscn" id="3_er7c6"]
 [ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="5_6j37k"]
 [ext_resource type="AudioStream" uid="uid://bhbweuth6d8xt" path="res://assets/audio/Open_World_-_Happiness_Full.WAV" id="6_6hpnh"]
-[ext_resource type="Script" uid="uid://0c5055txr5p4" path="res://editor/selection_controller.gd" id="7_selctrl"]
+[ext_resource type="Script" uid="uid://0c5055txr5p4" path="res://core/utils/selection_controller.gd" id="7_selctrl"]
 [ext_resource type="Script" uid="uid://ddojyyvgp6dp6" path="res://editor/province_mutator.gd" id="8_mutator"]
 [ext_resource type="PackedScene" uid="uid://fhm3x6nwgara" path="res://editor/ui/ui_editor.tscn" id="8_yyul4"]
 [ext_resource type="Script" uid="uid://oj7am0x5w5wn" path="res://editor/country_mutator.gd" id="9_cmutator"]

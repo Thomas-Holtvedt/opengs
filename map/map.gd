@@ -13,7 +13,7 @@ const SELECTION_PULSE_HALF_PERIOD: float = 0.2
 
 var db: Database
 var current_map_mode: MapMode
-var current_highlight: MapHighlight
+var current_selection: Array[Province] = []
 var all_map_modes: Dictionary[int, MapMode]
 var province_image: Image
 var province_image_offset: Vector2i
@@ -49,16 +49,18 @@ func create_map_textures() -> void:
 	texture_generator.set_map_textures(map_material_2d)
 
 
-func update_map_texture(province: Province, refresh: bool = true) -> void:
-	texture_generator.update_map_texture(province.center, province.bounding_radius, refresh)
-
-
-func refresh_territory_sdf() -> void:
-	texture_generator.refresh_territory_sdf()
-
-
 func update_country_borders(province: Province, refresh: bool = true) -> void:
-	texture_generator.update_country_borders(province.center, province.bounding_radius, refresh)
+	texture_generator.update_country_borders(_province_dirty_box(province), refresh)
+
+
+# Exact measured bounds grown by 1 so border flips on the neighbouring provinces' pixels
+# are captured too; falls back to the conservative center/radius square before the map
+# generator has run.
+func _province_dirty_box(province: Province) -> Rect2i:
+	if province.pixel_bounds.has_area():
+		return province.pixel_bounds.grow(1)
+	var r: int = province.bounding_radius
+	return Rect2i(province.center.x - r, province.center.y - r, r * 2 + 1, r * 2 + 1)
 
 
 func refresh_country_sdf() -> void:
@@ -123,11 +125,7 @@ func update_map() -> void:
 
 
 func set_map_mode(map_mode: MapMode.Type) -> void:
-	if current_highlight != null:
-		current_highlight.remove_highlights(current_map_mode)
 	current_map_mode = all_map_modes[map_mode]
-	if current_highlight != null:
-		current_highlight.apply_highlights(current_map_mode)
 	update_map()
 
 
@@ -148,12 +146,15 @@ func highlight_province(province: Province) -> void:
 
 
 func highlight_provinces(provinces: Array[Province]) -> void:
-	if current_highlight != null:
-		current_highlight.remove_highlights(current_map_mode)
-	current_highlight = MapHighlight.new(provinces)
-	current_highlight.apply_highlights(current_map_mode)
+	current_selection = provinces.duplicate()
 	texture_generator.update_selection_sdf(provinces)
-	update_map()
+
+
+# Rebuilds the selection SDFs for the current selection, e.g. after its provinces'
+# territory membership changed underneath it.
+func refresh_selection() -> void:
+	if not current_selection.is_empty():
+		texture_generator.update_selection_sdf(current_selection)
 
 
 # Runs when the async selection SDF build finishes — typically the frame after the click.
@@ -167,11 +168,8 @@ func _apply_selection_sdf() -> void:
 
 
 func clear_selection() -> void:
-	if current_highlight != null:
-		current_highlight.remove_highlights(current_map_mode)
-		current_highlight = null
+	current_selection = []
 	map_material_2d.set_shader_parameter("selection_sdf_rect", Vector4())
-	update_map()
 
 
 # Debug-only: dumps preview PNGs into res:// while running through the editor.
@@ -180,8 +178,5 @@ func save_debug_previews() -> void:
 		return
 	map_material_2d.get_shader_parameter("lookup_image").get_image().save_png("res://map/map_data/lut_preview.png")
 	map_material_2d.get_shader_parameter("province_border_image").get_image().save_png("res://map/map_data/bt_preview.png")
-	map_material_2d.get_shader_parameter("territory_border_image").get_image().save_png("res://map/map_data/tbt_preview.png")
-	texture_generator.province_sdf_texture.get_image().save_png("res://map/map_data/sdf_preview.png")
-	texture_generator.territory_sdf_texture.get_image().save_png("res://map/map_data/territory_sdf_preview.png")
 	texture_generator.country_sdf_texture.get_image().save_png("res://map/map_data/country_sdf_preview.png")
 	current_map_mode.get_image().save_png("res://map/map_data/cmap_preview.png")

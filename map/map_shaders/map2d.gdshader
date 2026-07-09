@@ -3,9 +3,6 @@ shader_type canvas_item;
 uniform sampler2D lookup_image: source_color, filter_nearest;
 uniform sampler2D color_map_image: source_color, filter_nearest;
 uniform sampler2D province_border_image: source_color, filter_nearest;
-uniform sampler2D territory_border_image: source_color, filter_nearest;
-uniform sampler2D province_sdf_image: filter_linear;
-uniform sampler2D territory_sdf_image: filter_linear;
 uniform sampler2D country_sdf_image: filter_linear;
 // Crop-sized SDFs around the current selection (MapTextureGenerator.update_selection_sdf):
 // distance to the selected province boundary / its territory boundary.
@@ -66,9 +63,9 @@ void fragment() {
 	float texture_height = float(textureSize(lookup_image, 0).y);
 	int checkers_pattern = int(mod(floor(UV.x * texture_width / checkers_width) + floor(UV.y * texture_height / checkers_width), 2.0));
 
-	// Color map dimensions and layer offset (height = 3 * num_rows)
+	// Color map dimensions and layer offset (height = 2 * num_rows: primary + secondary)
 	ivec2 cm_size = textureSize(color_map_image, 0);
-	int num_rows = cm_size.y / 3;
+	int num_rows = cm_size.y / 2;
 
 	// Textures
 	vec3 lookup_texture = texture(lookup_image, UV).rgb;
@@ -126,7 +123,6 @@ void fragment() {
 	// from the dedicated selection SDF crop. The B-channel scalar distance is shifted by
 	// 0.5 so it measures to the true geometric boundary (the seed rows sit half a pixel
 	// inside each side) — see ring_profile for how that enables sub-pixel-thin lines.
-	// Ring colors must match MapHighlight.province_hl / territory_hl.
 	float green_alpha = 0.0;
 	float white_alpha = 0.0;
 	if (selection_sdf_rect.z > 0.5) {
