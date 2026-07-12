@@ -7,7 +7,10 @@ func import_definition(db: Database) -> void:
 		if fields.size() < 1:
 			continue
 
-		var territory: Territory = Territory.new(fields[0])
+		var color: Color = Color.BLACK
+		if fields.size() >= 5:
+			color = Color(fields[2].to_int() / 255.0, fields[3].to_int() / 255.0, fields[4].to_int() / 255.0)
+		var territory: Territory = Territory.new(fields[0], color)
 		db.id_to_territory[territory.id] = territory
 
 

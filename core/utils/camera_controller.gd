@@ -40,9 +40,9 @@ signal far_map(is_far: bool)
 @export_category("Camera Zoom Settings")
 @export var camera_zoom_acceleration_speed_factor: float = 3.0
 @export var camera_zoom_velocity_half_life: float = 0.15
-@export var camera_zoom_min_bound: float = 10.0
+@export var camera_zoom_min_bound: float = 5.0
 @export var camera_zoom_max_bound: float = 1000.0
-@export var camera_zoom_threshold: float = 50.0
+@export var camera_zoom_threshold: float = 15.0
 
 @export_category("Camera Move-To Settings")
 @export var camera_move_to_speed: float = 200.0
@@ -56,7 +56,7 @@ class CameraTranslationCalculator extends PVACalculator: # Base class for camera
 	func get_value() -> Vector3:
 		return host.position
 
-	func set_value(val) -> void:
+	func set_value(val: Variant) -> void:
 		host.position = val
 
 	@warning_ignore("unused_parameter")
@@ -65,7 +65,7 @@ class CameraTranslationCalculator extends PVACalculator: # Base class for camera
 
 	func update_velocity() -> void:
 		# Share zoom-scaled translation behavior for movement and edge panning.
-		var safe_zoom = host.camera_zoom._clamp_value(host.camera_zoom.get_value())
+		var safe_zoom: float = host.camera_zoom._clamp_value(host.camera_zoom.get_value())
 		self.velocity += self.get_final_frame_acceleration() * self.acceleration_speed_factor * safe_zoom
 		self.frame_acceleration = self.starting_value
 
@@ -85,16 +85,16 @@ var camera_move: MovementCalculator
 # Camera Panning by screen edges
 class AutomaticPanCalculator extends CameraTranslationCalculator:
 	func get_final_frame_acceleration() -> Vector3:
-		var viewport_current:Viewport = host.get_viewport()
-		var viewport_visible_rectangle:Rect2i = Rect2i(viewport_current.get_visible_rect())
-		var viewport_size:Vector2i = viewport_visible_rectangle.size
-		var current_mouse_position:Vector2 = viewport_current.get_mouse_position()
-		var margin:float = host.camera_automatic_pan_margin
+		var viewport_current: Viewport = host.get_viewport()
+		var viewport_visible_rectangle: Rect2i = Rect2i(viewport_current.get_visible_rect())
+		var viewport_size: Vector2i = viewport_visible_rectangle.size
+		var current_mouse_position: Vector2 = viewport_current.get_mouse_position()
+		var margin: float = host.camera_automatic_pan_margin
 
 		if margin <= 0:
 			return Vector3.ZERO
 
-		var pan_direction:Vector2 = Vector2.ZERO
+		var pan_direction: Vector2 = Vector2.ZERO
 		if current_mouse_position.x < margin:
 			pan_direction.x = -1
 		elif current_mouse_position.x > viewport_size.x - margin:
@@ -112,12 +112,13 @@ var camera_automatic_pan: AutomaticPanCalculator
 
 # Camera Rotation to Mouse Offsets on X and Y
 class MouseRotationCalculator extends PVACalculator:
-	var mouse_last_position = null
+	# Null while the rotate button is up; the last sampled mouse position while held.
+	var mouse_last_position: Variant = null
 
 	func get_value() -> Vector2:
 		return Vector2(host.camera_socket.rotation.x, host.rotation.y)
 
-	func set_value(val) -> void:
+	func set_value(val: Variant) -> void:
 		host.camera_socket.rotation.x = val.x
 		host.rotation.y = val.y
 
@@ -145,7 +146,7 @@ class KeysRotationCalculator extends PVACalculator:
 	func get_value() -> Vector2:
 		return Vector2(host.camera_socket.rotation.x, host.rotation.y)
 
-	func set_value(val) -> void:
+	func set_value(val: Variant) -> void:
 		host.camera_socket.rotation.x = val.x
 		host.rotation.y = val.y
 
@@ -172,7 +173,7 @@ class ZoomCalculator extends PVACalculator:
 	func get_value() -> float:
 		return host.camera.position.z
 
-	func set_value(val: float) -> void:
+	func set_value(val: Variant) -> void:
 		host.camera.position.z = val
 
 	func on_input_event(event: InputEvent) -> void:
@@ -191,15 +192,19 @@ class ZoomCalculator extends PVACalculator:
 		# Scale step by current zoom: closer = smaller increments, farther = larger.
 		# An in-tick reduces z by fraction f = factor * half_life / ln(2); a symmetric
 		# out-tick must therefore use multiplier 1/(1-f) so successive in+out cancel.
-		var safe_zoom = _clamp_value(get_value())
-		var accel = self.get_final_frame_acceleration()
+		var safe_zoom: float = _clamp_value(get_value())
+		var accel: float = self.get_final_frame_acceleration()
 		if accel > 0:
-			var in_fraction = clampf(self.acceleration_speed_factor * self.velocity_half_life / log(2), 0.0, 0.95)
+			var in_fraction: float = clampf(self.acceleration_speed_factor * self.velocity_half_life / log(2), 0.0, 0.95)
 			accel /= (1.0 - in_fraction)
 		self.velocity += accel * self.acceleration_speed_factor * safe_zoom
 		self.frame_acceleration = self.starting_value
 
 var camera_zoom: ZoomCalculator
+
+# Tracks which side of the zoom threshold the camera is on, so far_map
+# is only emitted when the camera actually crosses it (edge detection).
+var _is_far_map: bool = true
 
 
 func _ready() -> void:
@@ -246,7 +251,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if !camera_can_process: return
+	if not camera_can_process: return
 
 	var text_focused: bool = _is_text_input_focused()
 
@@ -260,6 +265,16 @@ func _process(delta: float) -> void:
 		camera_rotate_keys.process(delta)
 	if camera_can_automatic_pan:
 		camera_automatic_pan.process(delta)
+
+	_update_far_map()
+
+
+func _update_far_map() -> void:
+	# Emit only when the camera crosses the threshold, not every frame.
+	var is_far: bool = camera.position.z > camera_zoom_threshold
+	if is_far != _is_far_map:
+		_is_far_map = is_far
+		far_map.emit(is_far)
 
 
 func _is_text_input_focused() -> bool:
@@ -278,11 +293,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera_move.on_input_event(event)
 	if camera_can_zoom:
 		camera_zoom.on_input_event(event)
-		if camera.position.z <= camera_zoom_threshold:
-			far_map.emit(false)
-		else:
-			far_map.emit(true)
-			
 	if camera_can_rotate_by_mouse_offset:
 		camera_rotate_mouse.on_input_event(event)
 	if camera_can_rotate_by_keys:
@@ -292,16 +302,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func shoot_ray(event: InputEvent) -> void:
-	var mouse_pos = get_viewport().get_mouse_position()
-	var ray_length = 2000
-	var from = camera.project_ray_origin(mouse_pos)
-	var to = from + camera.project_ray_normal(mouse_pos) * ray_length
-	var space = get_world_3d().direct_space_state
-	var ray_query = PhysicsRayQueryParameters3D.new()
+	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	var ray_length: float = 2000.0
+	var from: Vector3 = camera.project_ray_origin(mouse_pos)
+	var to: Vector3 = from + camera.project_ray_normal(mouse_pos) * ray_length
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var ray_query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.new()
 	ray_query.from = from
 	ray_query.to = to
-	var raycast_result = space.intersect_ray(ray_query)
-	if !raycast_result.is_empty():
+	var raycast_result: Dictionary = space.intersect_ray(ray_query)
+	if not raycast_result.is_empty():
 		_on_province_click(Vector2(raycast_result.position.x, raycast_result.position.z), event)
 
 

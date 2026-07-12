@@ -107,3 +107,11 @@ func _on_country_editor_create_country_requested() -> void:
 	map.create_country_label(new_country)
 	ui_editor.refresh_country_buttons()
 	ui_editor.show_country(new_country)
+
+
+func _on_camera_controller_editor_far_map(is_far: bool) -> void:
+	if is_far == true:
+		print("Far")
+	else:
+		print("Near")
+		

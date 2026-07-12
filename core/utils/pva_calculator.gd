@@ -20,7 +20,7 @@ var velocity: Variant
 var frame_acceleration: Variant # Auto merged into velocity, reset each frame
 
 
-func _init(host_node: Node3D, _acceleration_speed_factor, _velocity_half_life: float, _min_bound, _max_bound, _starting_value):
+func _init(host_node: Node3D, _acceleration_speed_factor: Variant, _velocity_half_life: float, _min_bound: Variant, _max_bound: Variant, _starting_value: Variant) -> void:
 	host = host_node
 	acceleration_speed_factor = _acceleration_speed_factor
 	velocity_half_life = _velocity_half_life
@@ -32,9 +32,9 @@ func _init(host_node: Node3D, _acceleration_speed_factor, _velocity_half_life: f
 
 func process(delta: float) -> void:
 	update_velocity()
-	
+
 	# Apply velocity, dampen and clamp to bounds
-	var new_value = get_value() + velocity * delta
+	var new_value: Variant = get_value() + velocity * delta
 	set_value(_clamp_value(new_value))
 	velocity *= _dampen_with_half_life(delta)
 
@@ -53,7 +53,7 @@ func get_value() -> Variant:
 
 # Must be overridden by subclasses
 @warning_ignore("unused_parameter")
-func set_value(new_value) -> void:
+func set_value(new_value: Variant) -> void:
 	push_error("Internal Method of PVACalculator missing implementation")
 
 # Must be overridden by subclasses
@@ -73,7 +73,7 @@ func _dampen_with_half_life(delta: float) -> Variant:
 	if velocity_half_life == 0: return 0 # Fully reset velocity if half_life is 0
 	return exp(NLOG2 * delta / velocity_half_life)
 
-func _clamp_value(value:Variant) -> Variant:
+func _clamp_value(value: Variant) -> Variant:
 	if value is float:
 		return clamp(value, min_bound, max_bound)
 	else: # vectors

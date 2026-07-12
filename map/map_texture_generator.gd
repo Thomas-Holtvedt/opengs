@@ -1,69 +1,68 @@
 
 class_name MapTextureGenerator
 
-# Emitted on the main thread when an async selection SDF build has finished and the
-# selection_*_sdf_texture / selection_rect members are safe to bind.
+# Main thread; selection_province_sdf_texture / selection_rect are safe to bind after this.
 signal selection_sdf_ready
 
 const NEIGHBOR_OFFSETS: Array[Vector2i] = [
 	Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)
 ]
-# Bounded SDF refresh assumes max distance any shader cares about. Must be >= the largest
-# value the consuming uniforms (country_fade_inwards/outwards/color_fade) can hit.
-# Used to derive the JFA crop region from the per-batch dirty rect.
+# Max SDF distance any shader uniform reads (country_fade_* etc). Bounded refreshes pad
+# their dirty rect by this, so it must stay >= the largest such uniform value.
 const SDF_AFFECT_RANGE: int = 128
-# Padding around the selection's bounding box when building the selection SDF crop. Must
-# comfortably exceed the widest ring the shader can draw (selection_thickness at its pulse
-# peak + selection_fade).
+# Padding around the selection SDF crop; must exceed the widest ring the shader can draw
+# (selection_thickness at its pulse peak + selection_fade).
 const SELECTION_MARGIN: int = 24
 
 var lookup_texture: ImageTexture
 var border_texture: ImageTexture
+# Distance field around every province boundary. Province shapes never change at runtime,
+# so this is built once; the shader draws the AA border line from its B-channel distance.
+var province_sdf_texture: ImageTexture
 var country_sdf_texture: ImageTexture
+# Distance field around every territory boundary, built once and disk-cached. The white
+# selection ring reads it directly, so selecting a huge territory costs nothing per click.
+var territory_sdf_texture: ImageTexture
 
-# Crop-sized SDFs around the current selection, rebuilt from scratch on every selection
-# change (update_selection_sdf). The shader draws the green province ring and white
-# territory ring purely from these — smooth at any zoom, no per-fragment border heuristics.
+# Lookup-indexed territory identity map (same 256-wide layout as MapMode): entry = the
+# territory's color, black = none. Compared against selected_territory_ids in the shader.
+var territory_id_image: Image
+var territory_id_texture: ImageTexture
+
+# Crop-sized SDF around the current selection's province boundaries, rebuilt per selection
+# change; the green ring is drawn purely from this.
 var selection_province_sdf_texture: ImageTexture
-var selection_territory_sdf_texture: ImageTexture
 var selection_rect: Rect2i
 
-# Async selection SDF state (main-thread-only, same pattern as the country SDF worker).
-# The request id makes newer selections win: a finishing worker only publishes if its id is
-# still current, and _selection_pending holds the latest superseding request.
+# Async selection build state (main thread only). The request id makes newer selections
+# win: a finishing worker only publishes if its id is still current.
 var _selection_worker_busy: bool = false
 var _selection_request_id: int = 0
 var _selection_pending: Array[Province] = []
-# Note: there is no country_border_texture. country_border_image is kept around purely so
-# we can write the L8 mask into the disk cache during cold gen, but the shader has no
-# country_border_image uniform — only country_sdf_image is sampled. Re-uploading the L8
-# mask on every refresh was a ~10 ms wasted GPU transfer per province change.
 
-# CPU-side mirrors so we can mutate masks and SDF tiles without going through the GPU
-# per province. The country SDF image is also kept here so partial JFA results can be
-# blitted into a known-good full image before re-uploading.
+# country_border_image exists only so cold gen can write the L8 mask into the disk cache;
+# the shader never samples it, so it is never uploaded as a texture.
+# The SDF images are kept so partial JFA results can be blitted in before re-uploading.
+var territory_border_image: Image
+var territory_sdf_image: Image
 var country_border_image: Image
 var country_sdf_image: Image
 
-# Raw byte mirror of the L8 country border mask, mutated only by the country SDF worker
-# thread (see _country_worker_run). PackedByteArray byte writes are ~50x faster than
-# Image.set_pixel in GDScript, which is what made this worth keeping.
+# Raw L8 mask bytes; byte writes are ~50x faster than Image.set_pixel in GDScript.
+# Territory bytes are mutated on the main thread, country bytes only by the SDF worker.
+var territory_border_bytes: PackedByteArray
 var country_border_bytes: PackedByteArray
 
-# Accumulated bounding box of regions whose mask has been mutated since the last refresh.
-# Empty (has_area()==false) means no pending change.
+# Accumulated bounding boxes of mask mutations awaiting refresh; no area = nothing pending.
+var _territory_dirty_box: Rect2i
 var _country_dirty_box: Rect2i
 
-# Async refresh state for the country SDF (main-thread-only).
-# _country_worker_busy is true while a WorkerThreadPool task is mid-flight (from add_task
-# until its deferred _country_sdf_apply has run on the main thread).
-# _country_pending_box accumulates any new dirty regions that come in while the worker is
-# busy; once the in-flight task finishes, the apply step kicks off a follow-up task with it.
+# Country SDF worker state: busy while a task is in flight; regions arriving meanwhile
+# accumulate in _country_pending_box and run as a follow-up task.
 var _country_worker_busy: bool = false
 var _country_pending_box: Rect2i
 
-# Injected once at construction. The country SDF worker reads it to re-derive border
-# pixels; it only reads provinces/ownership, never mutates them.
+# Injected once; workers only read provinces/ownership from it, never mutate.
 var db: Database
 
 var province_image: Image
@@ -101,17 +100,25 @@ func create_map_textures() -> void:
 
 func _load_from_cache() -> void:
 	lookup_texture = ImageTexture.create_from_image(cache.load_lookup())
-	border_texture = ImageTexture.create_from_image(cache.load_border())
+	var border_image: Image = cache.load_border()
+	border_texture = ImageTexture.create_from_image(border_image)
+	# The province SDF isn't disk-cached; one extra GPU JFA at load rebuilds it from the mask.
+	province_sdf_texture = ImageTexture.create_from_image(
+			MapTextureSDF.build_sdf(border_image.get_data(), width, height))
+	territory_border_image = cache.load_territory_border()
+	territory_border_bytes = territory_border_image.get_data()
+	territory_sdf_image = cache.load_territory_sdf()
+	territory_sdf_texture = ImageTexture.create_from_image(territory_sdf_image)
 	country_border_image = cache.load_country_border()
 	country_border_bytes = country_border_image.get_data()
 	country_sdf_image = cache.load_country_sdf()
 	country_sdf_texture = ImageTexture.create_from_image(country_sdf_image)
 	cache.load_color_map(db)
 	_apply_province_bounds(cache.load_province_bounds())
+	_build_territory_id_map()
 
 
-# Writes measured pixel bounds onto the Province objects. Keys are packed RGB province
-# colors ((r << 16) | (g << 8) | b), matching _selection_color_key.
+# Keys are packed RGB province colors ((r << 16) | (g << 8) | b).
 func _apply_province_bounds(province_bounds: Dictionary) -> void:
 	for key: int in province_bounds:
 		var color: Color = Color(
@@ -130,16 +137,19 @@ func _generate() -> void:
 	lut_data.resize(lut_size)
 	var border_data: PackedByteArray = PackedByteArray()
 	border_data.resize(border_size)
+	var territory_border_data: PackedByteArray = PackedByteArray()
+	territory_border_data.resize(border_size)
 	var country_border_data: PackedByteArray = PackedByteArray()
 	country_border_data.resize(border_size)
 
 	var color_key_to_lookup: Dictionary[int, Vector2i] = {}
 	var color_map_r: int = 0
 	var color_map_g: int = 0
+	var territory_cache: Dictionary[int, Territory] = {}
 	var owner_cache: Dictionary[int, Country] = {}
 
-	# Exact per-province pixel bounds, accumulated per lookup index (lookup.y * 256 +
-	# lookup.x). Packed arrays instead of a Dictionary keep the per-pixel cost to compares.
+	# Per-province pixel bounds, accumulated per lookup index (lookup.y * 256 + lookup.x).
+	# Packed arrays instead of a Dictionary keep the per-pixel cost to compares.
 	var bounds_min_x: PackedInt32Array = PackedInt32Array()
 	bounds_min_x.resize(65536)
 	bounds_min_x.fill(width)
@@ -188,6 +198,9 @@ func _generate() -> void:
 			var is_border: bool = _is_border_pixel(x, y, src_idx, r, g, b)
 			border_data[border_idx] = 0 if is_border else 255
 
+			var is_territory_border: bool = _is_territory_border_pixel(x, y, src_idx, r, g, b, territory_cache)
+			territory_border_data[border_idx] = 0 if is_territory_border else 255
+
 			var is_country_border: bool = _is_country_border_pixel(x, y, src_idx, r, g, b, owner_cache)
 			country_border_data[border_idx] = 0 if is_country_border else 255
 
@@ -195,6 +208,15 @@ func _generate() -> void:
 	lookup_texture = ImageTexture.create_from_image(lut_image)
 	var border_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_L8, border_data)
 	border_texture = ImageTexture.create_from_image(border_image)
+	print("  Province SDF (GPU JFA) - Start")
+	province_sdf_texture = ImageTexture.create_from_image(MapTextureSDF.build_sdf(border_data, width, height))
+	print("  Province SDF (GPU JFA) - End")
+	territory_border_image = Image.create_from_data(width, height, false, Image.FORMAT_L8, territory_border_data)
+	territory_border_bytes = territory_border_data
+	print("  Territory SDF (GPU JFA) - Start")
+	territory_sdf_image = MapTextureSDF.build_sdf(territory_border_data, width, height)
+	print("  Territory SDF (GPU JFA) - End")
+	territory_sdf_texture = ImageTexture.create_from_image(territory_sdf_image)
 	country_border_image = Image.create_from_data(width, height, false, Image.FORMAT_L8, country_border_data)
 	country_border_bytes = country_border_data
 	print("  Country SDF (GPU JFA) - Start")
@@ -213,12 +235,12 @@ func _generate() -> void:
 				bounds_max_x[bounds_idx] - bounds_min_x[bounds_idx] + 1,
 				bounds_max_y[bounds_idx] - bounds_min_y[bounds_idx] + 1)
 	_apply_province_bounds(province_bounds)
+	_build_territory_id_map()
 
-	cache.save(lut_image, border_image, country_border_image, country_sdf_image, province_bounds, db)
+	cache.save(lut_image, border_image, territory_border_image, territory_sdf_image, country_border_image, country_sdf_image, province_bounds, db)
 
 
-# Just tracks the dirty region on the main thread; the actual border-mask rewrite happens
-# on a worker thread inside _country_worker_run, kicked off by refresh_country_sdf.
+# Only tracks the dirty region; the mask rewrite happens on the worker in _country_worker_run.
 func update_country_borders(box: Rect2i, refresh: bool = true) -> void:
 	var clamped: Rect2i = box.intersection(Rect2i(0, 0, width, height))
 	if not clamped.has_area():
@@ -228,10 +250,8 @@ func update_country_borders(box: Rect2i, refresh: bool = true) -> void:
 		refresh_country_sdf()
 
 
-# Hands the accumulated dirty region off to a WorkerThreadPool task. Returns immediately;
-# the visible fade band updates once the worker finishes and its deferred apply runs on the
-# next main-thread frame. If a worker is already in flight, the new region is folded into
-# _country_pending_box and picked up after the current task completes.
+# Hands the accumulated dirty region to a worker task and returns immediately; the visible
+# fade band updates once the deferred apply runs on a later main-thread frame.
 func refresh_country_sdf() -> void:
 	if not _country_dirty_box.has_area():
 		return
@@ -250,21 +270,12 @@ func _start_country_worker(dirty_box: Rect2i) -> void:
 	WorkerThreadPool.add_task(_country_worker_run.bind(dirty_box))
 
 
-# Worker-thread function: rewrites country_border_bytes for the dirty region (the expensive
-# GDScript pixel loops), then hands the affected region back to the main thread, which runs
-# the GPU JFA + blit + texture upload.
-# The JFA must NOT run here: MapTextureSDF's shared local RenderingDevice is created on
-# the main thread (cold gen / territory refresh) and Godot only allows a RenderingDevice
-# to be used from the thread that created it.
-# Notes on concurrency:
-#  - country_border_bytes: written only by this worker after init; the main thread reads it
-#    only in _country_sdf_apply, which runs after this task has finished (call_deferred),
-#    so there is no concurrent access.
-#  - src_data, width/height/bpp/src_stride: written once at init, then read-only.
-#  - db.color_to_province: built during DataImporter and never mutated afterwards.
-#  - province.province_owner: can be mutated by main while we read it. Treated as an
-#    eventually-consistent snapshot — if main changes ownership mid-task, the next refresh
-#    will reconcile.
+# Worker thread: rewrites country_border_bytes for the dirty region, then defers the GPU
+# work back to the main thread. The JFA must NOT run here; Godot restricts a RenderingDevice
+# to the thread that created it, and MapTextureSDF's is created on the main thread.
+# Concurrency: country_border_bytes is only read by main after this task finishes
+# (call_deferred); src_data and db.color_to_province are immutable after init; ownership can
+# change mid-task, but the next refresh reconciles that.
 func _country_worker_run(dirty_box: Rect2i) -> void:
 	var x_min: int = dirty_box.position.x
 	var x_max: int = dirty_box.position.x + dirty_box.size.x - 1
@@ -285,10 +296,7 @@ func _country_worker_run(dirty_box: Rect2i) -> void:
 	_country_sdf_apply.call_deferred(dirty_box)
 
 
-# Runs on the main thread (via call_deferred from the worker): GPU JFA on the dirty crop,
-# then blit + texture upload. All of this must stay on the main thread — the JFA because
-# of the RenderingDevice thread restriction, the blit/update because they touch rendering
-# resources.
+# Main thread (deferred from the worker): GPU JFA on the dirty crop, blit, texture upload.
 func _country_sdf_apply(dirty_box: Rect2i) -> void:
 	_refresh_sdf_bounded(country_sdf_image, country_sdf_texture, country_border_bytes, dirty_box)
 
@@ -299,11 +307,57 @@ func _country_sdf_apply(dirty_box: Rect2i) -> void:
 		_start_country_worker(next_box)
 
 
-# Rebuilds the selection SDFs for the given provinces: one distance field around the union
-# of the selected provinces' boundaries, one around their territories' outer boundary. The
-# expensive pixel passes run on a WorkerThreadPool task; selection_sdf_ready is emitted once
-# the textures are live (typically the next frame, since the crop uses exact pixel bounds).
-# A newer call while a build is in flight supersedes it — stale results are never shown.
+# Synchronous on the main thread: territory reassignment is an editor-only action on small
+# regions, so it doesn't need the worker handoff the country ownership churn gets.
+func update_territory_borders(box: Rect2i, refresh: bool = true) -> void:
+	var clamped: Rect2i = box.intersection(Rect2i(0, 0, width, height))
+	if not clamped.has_area():
+		return
+	var territory_cache: Dictionary[int, Territory] = {}
+	for y in range(clamped.position.y, clamped.end.y):
+		var row: int = y * width
+		for x in range(clamped.position.x, clamped.end.x):
+			var src_idx: int = y * src_stride + x * bpp
+			var is_territory_border: bool = _is_territory_border_pixel(
+					x, y, src_idx, src_data[src_idx], src_data[src_idx + 1], src_data[src_idx + 2], territory_cache)
+			territory_border_bytes[row + x] = 0 if is_territory_border else 255
+	_territory_dirty_box = clamped if not _territory_dirty_box.has_area() else _territory_dirty_box.merge(clamped)
+	if refresh:
+		refresh_territory_sdf()
+
+
+func refresh_territory_sdf() -> void:
+	if not _territory_dirty_box.has_area():
+		return
+	_refresh_sdf_bounded(territory_sdf_image, territory_sdf_texture, territory_border_bytes, _territory_dirty_box)
+	_territory_dirty_box = Rect2i()
+
+
+# Runs once after cold gen / cache load; editor reassignment patches single entries.
+func _build_territory_id_map() -> void:
+	var num_rows: int = maxi(1, ceili(float(db.province_color_to_lookup.size()) / 256.0))
+	territory_id_image = Image.create(256, num_rows, false, Image.FORMAT_RGB8)
+	for province_color: Color in db.color_to_province:
+		_write_territory_id(db.color_to_province[province_color])
+	territory_id_texture = ImageTexture.create_from_image(territory_id_image)
+
+
+func update_territory_id(province: Province) -> void:
+	_write_territory_id(province)
+	territory_id_texture.update(territory_id_image)
+
+
+func _write_territory_id(province: Province) -> void:
+	if not db.province_color_to_lookup.has(province.color):
+		return
+	var lookup: Color = db.province_color_to_lookup[province.color]
+	var id_color: Color = province.territory.color if province.territory != null else Color.BLACK
+	territory_id_image.set_pixel(roundi(lookup.r * 255), roundi(lookup.g * 255), id_color)
+
+
+# Builds a distance field around the union of the selected provinces' boundaries, cropped
+# to their pixel bounds, on a worker task; selection_sdf_ready fires once the texture is
+# live. A newer call supersedes any build in flight, so stale results are never shown.
 func update_selection_sdf(provinces: Array[Province]) -> void:
 	_selection_request_id += 1
 	if _selection_worker_busy:
@@ -312,35 +366,26 @@ func update_selection_sdf(provinces: Array[Province]) -> void:
 	_start_selection_worker(provinces, _selection_request_id)
 
 
-# Resolves everything that touches game objects (provinces, territories) here on the main
-# thread; the worker only reads src_data (immutable after init) and the plain dictionaries
-# built here.
+# Everything touching game objects resolves here on the main thread; the worker only reads
+# src_data and the plain dictionary built here.
 func _start_selection_worker(provinces: Array[Province], request_id: int) -> void:
 	_selection_worker_busy = true
 	var prov_keys: Dictionary[int, bool] = {}
-	var terr_keys: Dictionary[int, bool] = {}
 	var box: Rect2i = _province_box(provinces[0])
 	for province in provinces:
 		prov_keys[_selection_color_key(province.color)] = true
 		box = box.merge(_province_box(province))
-		if province.territory == null:
-			continue
-		for t_province in province.territory.provinces:
-			terr_keys[_selection_color_key(t_province.color)] = true
-			box = box.merge(_province_box(t_province))
 	box = box.grow(SELECTION_MARGIN).intersection(Rect2i(0, 0, width, height))
-	WorkerThreadPool.add_task(_selection_worker_run.bind(prov_keys, terr_keys, box, request_id))
+	WorkerThreadPool.add_task(_selection_worker_run.bind(prov_keys, box, request_id))
 
 
-# Worker-thread function: the per-pixel membership and boundary-mask passes. The GPU JFA
-# must NOT run here (RenderingDevice thread restriction) — the masks are handed back to the
-# main thread via call_deferred.
-func _selection_worker_run(prov_keys: Dictionary[int, bool], terr_keys: Dictionary[int, bool], box: Rect2i, request_id: int) -> void:
+# Worker thread: membership/boundary passes and the JFA seed-buffer build. Only the GPU
+# JFA itself must stay on the main thread (RenderingDevice thread restriction).
+func _selection_worker_run(prov_keys: Dictionary[int, bool], box: Rect2i, request_id: int) -> void:
 	var cw: int = box.size.x
 	var ch: int = box.size.y
 
-	# Pass 1: membership byte per crop pixel (bit 1 = selected province, bit 2 = territory),
-	# memoized per province color so the src_data key extraction runs once per pixel.
+	# Pass 1: membership byte per crop pixel (1 = selected province), memoized per color.
 	var membership: PackedByteArray = PackedByteArray()
 	membership.resize(cw * ch)
 	var memo: Dictionary[int, int] = {}
@@ -355,19 +400,15 @@ func _selection_worker_run(prov_keys: Dictionary[int, bool], terr_keys: Dictiona
 			if memo.has(key):
 				m = memo[key]
 			else:
-				m = (1 if prov_keys.has(key) else 0) | (2 if terr_keys.has(key) else 0)
+				m = 1 if prov_keys.has(key) else 0
 				memo[key] = m
 			membership[local_row + lx] = m
 
-	# Pass 2: two-sided boundary masks (0 = boundary seed, 255 = empty) from membership
-	# transitions. Two-sided keeps the distance field symmetric around the true boundary,
-	# which sits half a pixel past the seed row on each side (the shader adds the 0.5).
+	# Pass 2: two-sided boundary mask (0 = seed, 255 = empty). Two-sided keeps the field
+	# symmetric around the true boundary, half a pixel past the seed rows (shader adds 0.5).
 	var prov_mask: PackedByteArray = PackedByteArray()
 	prov_mask.resize(cw * ch)
 	prov_mask.fill(255)
-	var terr_mask: PackedByteArray = PackedByteArray()
-	terr_mask.resize(cw * ch)
-	terr_mask.fill(255)
 	for ly in range(ch):
 		var local_row: int = ly * cw
 		for lx in range(cw):
@@ -382,32 +423,22 @@ func _selection_worker_run(prov_keys: Dictionary[int, bool], terr_keys: Dictiona
 				diff |= m ^ membership[idx - cw]
 			if ly < ch - 1:
 				diff |= m ^ membership[idx + cw]
-			if diff & 1:
+			if diff != 0:
 				prov_mask[idx] = 0
-			if diff & 2:
-				terr_mask[idx] = 0
 
-	_selection_sdf_apply.call_deferred(prov_mask, terr_mask, box, terr_keys.is_empty(), request_id)
+	var seeds: PackedByteArray = MapTextureSDF.build_seeds_region(prov_mask, cw, ch, Rect2i(0, 0, cw, ch))
+	_selection_sdf_apply.call_deferred(seeds, box, request_id)
 
 
-# Main thread (via call_deferred from the worker): GPU JFA + texture creation, then publish
-# through selection_sdf_ready — unless a newer selection arrived while the worker ran, in
-# which case this result is dropped and the pending request starts immediately.
-func _selection_sdf_apply(prov_mask: PackedByteArray, terr_mask: PackedByteArray, box: Rect2i, no_territory: bool, request_id: int) -> void:
+# Main thread: GPU JFA + texture creation, published unless a newer selection superseded us.
+func _selection_sdf_apply(seeds: PackedByteArray, box: Rect2i, request_id: int) -> void:
 	_selection_worker_busy = false
 	if request_id == _selection_request_id:
 		var cw: int = box.size.x
 		var ch: int = box.size.y
-		var crop: Rect2i = Rect2i(0, 0, cw, ch)
-		var prov_bytes: PackedByteArray = MapTextureSDF.build_sdf_region(prov_mask, cw, ch, crop)
+		var prov_bytes: PackedByteArray = MapTextureSDF.build_sdf_region_from_seeds(seeds, cw, ch)
 		selection_province_sdf_texture = ImageTexture.create_from_image(
 				Image.create_from_data(cw, ch, false, Image.FORMAT_RGBA8, prov_bytes))
-		if no_territory:
-			selection_territory_sdf_texture = _far_sdf_texture()
-		else:
-			var terr_bytes: PackedByteArray = MapTextureSDF.build_sdf_region(terr_mask, cw, ch, crop)
-			selection_territory_sdf_texture = ImageTexture.create_from_image(
-					Image.create_from_data(cw, ch, false, Image.FORMAT_RGBA8, terr_bytes))
 		selection_rect = box
 		selection_sdf_ready.emit()
 	if not _selection_pending.is_empty():
@@ -416,8 +447,7 @@ func _selection_sdf_apply(prov_mask: PackedByteArray, terr_mask: PackedByteArray
 		_start_selection_worker(next, _selection_request_id)
 
 
-# Exact measured bounds when the map generator has produced them; the conservative
-# center/bounding_radius square otherwise.
+# Measured bounds when available, the conservative center/radius square otherwise.
 func _province_box(province: Province) -> Rect2i:
 	if province.pixel_bounds.has_area():
 		return province.pixel_bounds
@@ -429,17 +459,8 @@ func _selection_color_key(color: Color) -> int:
 	return (int(round(color.r * 255.0)) << 16) | (int(round(color.g * 255.0)) << 8) | int(round(color.b * 255.0))
 
 
-# 1x1 "everything is far away" SDF stand-in, used when the selection has no territory so
-# the white ring stays hidden. Matches the jfa_encode sentinel encoding (B = max distance).
-func _far_sdf_texture() -> ImageTexture:
-	var data: PackedByteArray = PackedByteArray([128, 128, 255, 255])
-	return ImageTexture.create_from_image(Image.create_from_data(1, 1, false, Image.FORMAT_RGBA8, data))
-
-
-# Runs JFA on the smallest crop containing every pixel whose SDF could have changed
-# (dirty_box padded by SDF_AFFECT_RANGE) plus another SDF_AFFECT_RANGE so the JFA can
-# see all borders that any affected pixel could reach. The crop result is blitted back
-# into sdf_image at the affected sub-region, then the whole image is re-uploaded.
+# JFA on the smallest crop containing every affected pixel (dirty_box + SDF_AFFECT_RANGE),
+# padded by another SDF_AFFECT_RANGE so the JFA sees every border those pixels could reach.
 func _refresh_sdf_bounded(sdf_image: Image, sdf_texture: ImageTexture, border_bytes: PackedByteArray, dirty_box: Rect2i) -> void:
 	var image_bounds: Rect2i = Rect2i(0, 0, width, height)
 	var affected: Rect2i = dirty_box.grow(SDF_AFFECT_RANGE).intersection(image_bounds)
@@ -463,9 +484,34 @@ func _is_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int) -> b
 	return false
 
 
-# One-sided: only owned pixels are marked, so unowned pixels adjacent to a country are NOT
-# border. This way the SDF's RG offset always points at a pixel carrying the owner's color,
-# which map2d.gdshader relies on to bleed the country color outwards across the border.
+# Two-sided: both sides of a territory boundary are marked, so the white ring straddles it.
+# The RG offset can land on either side; the shader's across test steps past it.
+func _is_territory_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary) -> bool:
+	var territory: Territory = _cached_territory(r, g, b, _cache)
+	for offset in NEIGHBOR_OFFSETS:
+		var nx: int = x + offset.x
+		var ny: int = y + offset.y
+		if nx < 0 or nx >= width or ny < 0 or ny >= height:
+			continue
+		var ni: int = src_idx + offset.x * bpp + offset.y * src_stride
+		if _cached_territory(src_data[ni], src_data[ni + 1], src_data[ni + 2], _cache) != territory:
+			return true
+	return false
+
+
+# Memoized per packed-RGB key, avoiding a Color allocation and dict lookup per pixel.
+func _cached_territory(r: int, g: int, b: int, _cache: Dictionary) -> Territory:
+	var key: int = (r << 16) | (g << 8) | b
+	if _cache.has(key):
+		return _cache[key]
+	var province: Province = db.color_to_province.get(Color(r / 255.0, g / 255.0, b / 255.0))
+	var territory: Territory = province.territory if province != null else null
+	_cache[key] = territory
+	return territory
+
+
+# One-sided: only owned pixels are marked, so the SDF's RG offset always points at a pixel
+# carrying the owner's color — map2d.gdshader relies on this to bleed country color outwards.
 func _is_country_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: int, _cache: Dictionary) -> bool:
 	var owner: Country = _cached_owner(r, g, b, _cache)
 	if owner == null:
@@ -481,9 +527,7 @@ func _is_country_border_pixel(x: int, y: int, src_idx: int, r: int, g: int, b: i
 	return false
 
 
-# Memoizes the per-color owner lookup so callers can avoid a Color allocation and a
-# Color-keyed dict lookup on every pixel. Each dirty region typically contains only a
-# handful of distinct province colors, so after the first miss the cache is mostly hits.
+# Memoized per packed-RGB key, avoiding a Color allocation and dict lookup per pixel.
 func _cached_owner(r: int, g: int, b: int, _cache: Dictionary) -> Country:
 	var key: int = (r << 16) | (g << 8) | b
 	if _cache.has(key):
@@ -494,7 +538,64 @@ func _cached_owner(r: int, g: int, b: int, _cache: Dictionary) -> Country:
 	return owner
 
 
+# Resolves a per-pixel owner-id grid (provinces sharing a country get the same id, so only
+# inter-country and country/ocean borders become chains) and hands it to MapBorderTracer.
+# Pure reads, safe on a WorkerThreadPool task.
+func build_country_border_chains(simplify_epsilon: float = 0.0, smooth_iterations: int = 0) -> Array[PackedVector2Array]:
+	var owner_ids: PackedInt32Array = PackedInt32Array()
+	owner_ids.resize(width * height)
+	# Packed RGB -> owner id, memoized per province color.
+	var key_to_id: Dictionary[int, int] = {}
+	# Country -> shared owner id (-1 = unowned).
+	var owner_to_id: Dictionary[Country, int] = {}
+	var next_id: int = 0
+	for y in range(height):
+		var srow: int = y * src_stride
+		var orow: int = y * width
+		for x in range(width):
+			var si: int = srow + x * bpp
+			var r: int = src_data[si]
+			var g: int = src_data[si + 1]
+			var b: int = src_data[si + 2]
+			var rgb: int = (r << 16) | (g << 8) | b
+			var id: int
+			if key_to_id.has(rgb):
+				id = key_to_id[rgb]
+			else:
+				var province: Province = db.color_to_province.get(Color(r / 255.0, g / 255.0, b / 255.0))
+				var owner: Country = province.province_owner if province != null else null
+				if owner == null:
+					id = -1
+				elif owner_to_id.has(owner):
+					id = owner_to_id[owner]
+				else:
+					id = next_id
+					next_id += 1
+					owner_to_id[owner] = id
+				key_to_id[rgb] = id
+			owner_ids[orow + x] = id
+	var tracer: MapBorderTracer = MapBorderTracer.new()
+	var raw: Array[PackedVector2Array] = tracer.trace(owner_ids, width, height)
+	if simplify_epsilon <= 0.0 and smooth_iterations <= 0:
+		return raw
+	var out: Array[PackedVector2Array] = []
+	for chain: PackedVector2Array in raw:
+		var closed: bool = chain.size() >= 2 and chain[0].is_equal_approx(chain[chain.size() - 1])
+		var c: PackedVector2Array = chain
+		# RDP needs a non-degenerate baseline, so only simplify open chains; loops go straight
+		# to smoothing (they're small enclaves, extra points are cheap).
+		if simplify_epsilon > 0.0 and not closed:
+			c = MapBorderTracer.simplify(c, simplify_epsilon)
+		if smooth_iterations > 0:
+			c = MapBorderTracer.smooth(c, smooth_iterations, closed)
+		out.append(c)
+	return out
+
+
 func set_map_textures(shader_material: ShaderMaterial) -> void:
 	shader_material.set_shader_parameter("lookup_image", lookup_texture)
 	shader_material.set_shader_parameter("province_border_image", border_texture)
+	shader_material.set_shader_parameter("province_sdf_image", province_sdf_texture)
+	shader_material.set_shader_parameter("territory_sdf_image", territory_sdf_texture)
+	shader_material.set_shader_parameter("territory_id_image", territory_id_texture)
 	shader_material.set_shader_parameter("country_sdf_image", country_sdf_texture)

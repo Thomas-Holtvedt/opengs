@@ -62,6 +62,7 @@ stream = ExtResource("6_6hpnh")
 
 [node name="FlagIconGenerator" parent="." unique_id=786863813 instance=ExtResource("11_loxr8")]
 
+[connection signal="far_map" from="CameraControllerEditor" to="." method="_on_camera_controller_editor_far_map"]
 [connection signal="province_selected" from="CameraControllerEditor" to="." method="_on_camera_controller_province_selected"]
 [connection signal="selection_changed" from="SelectionController" to="." method="_on_selection_changed"]
 [connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]

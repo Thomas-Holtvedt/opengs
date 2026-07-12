@@ -5,10 +5,12 @@ var db: Database = Database.new()
 @onready var map: Map = $Map
 @onready var selection: SelectionController = $SelectionController
 @onready var province_panel: ProvinceSelected = $ProvinceSelected
+@onready var text_flag_generator: TextFlagGenerator = $FlagIconGenerator
 
 
 func _ready() -> void:
 	DataImporter.new(db)
+	await text_flag_generator.create_all_text_flags(db)
 	map.initialize(db)
 	selection.setup(map, db)
 

@@ -48,9 +48,15 @@ static func build_sdf(border_data: PackedByteArray, width: int, height: int) -> 
 # JFA correctness relies on `border_data` covering the full image — callers should pad
 # `region` by the max SDF range so every affected pixel can find its true nearest border.
 static func build_sdf_region(border_data: PackedByteArray, full_width: int, full_height: int, region: Rect2i) -> PackedByteArray:
-	var rw: int = region.size.x
-	var rh: int = region.size.y
-	if rw <= 0 or rh <= 0:
+	var init_data: PackedByteArray = build_seeds_region(border_data, full_width, full_height, region)
+	return build_sdf_region_from_seeds(init_data, region.size.x, region.size.y)
+
+
+# GPU half of build_sdf_region, taking a prebuilt seed buffer (see build_seeds_region).
+# Splitting the two lets callers run the GDScript seed loop on a worker thread and keep
+# only this part — which must touch the RenderingDevice — on the main thread.
+static func build_sdf_region_from_seeds(init_data: PackedByteArray, rw: int, rh: int) -> PackedByteArray:
+	if rw <= 0 or rh <= 0 or init_data.is_empty():
 		return PackedByteArray()
 
 	if not _ensure_compute_resources():
@@ -72,7 +78,6 @@ static func build_sdf_region(border_data: PackedByteArray, full_width: int, full
 	)
 	var view: RDTextureView = RDTextureView.new()
 
-	var init_data: PackedByteArray = _build_initial_seeds_region(border_data, full_width, full_height, region)
 	var seed_a: RID = rd.texture_create(seed_format, view, [init_data])
 	var empty: PackedByteArray = PackedByteArray()
 	empty.resize(rw * rh * 4)
@@ -180,7 +185,8 @@ static func _encode_push(width: int, height: int) -> PackedByteArray:
 # Builds the seed-coord init buffer for a region. Seed coordinates are LOCAL to the region,
 # so the encode shader produces offsets that work when the result is blitted at the region
 # origin. Pre-fills with 0xFF (sentinel) and only writes border pixels inside the region.
-static func _build_initial_seeds_region(border_data: PackedByteArray, full_width: int, full_height: int, region: Rect2i) -> PackedByteArray:
+# Pure CPU byte work with no RenderingDevice access — safe to run on worker threads.
+static func build_seeds_region(border_data: PackedByteArray, full_width: int, full_height: int, region: Rect2i) -> PackedByteArray:
 	var rw: int = region.size.x
 	var rh: int = region.size.y
 	var data: PackedByteArray = PackedByteArray()

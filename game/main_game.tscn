@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://cdy1220h7wcq3" path="res://core/ui/map_modes.tscn" id="4_t4f2l"]
 [ext_resource type="PackedScene" uid="uid://5arm34pep1aj" path="res://game/ui/province_selected.tscn" id="5_433cb"]
 [ext_resource type="Script" uid="uid://0c5055txr5p4" path="res://core/utils/selection_controller.gd" id="6_selctrl"]
+[ext_resource type="PackedScene" uid="uid://bnu1uxcmakle2" path="res://core/utils/flag_icon_generator.tscn" id="7_v3atx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_g4axw"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -38,9 +39,11 @@ shadow_enabled = true
 
 [node name="ProvinceSelected" parent="." unique_id=2014797835 instance=ExtResource("5_433cb")]
 
-[node name="SelectionController" type="Node" parent="."]
+[node name="SelectionController" type="Node" parent="." unique_id=1504256945]
 script = ExtResource("6_selctrl")
 
+[node name="FlagIconGenerator" parent="." unique_id=786863813 instance=ExtResource("7_v3atx")]
+
 [connection signal="province_selected" from="Player" to="." method="_on_player_province_selected"]
-[connection signal="selection_changed" from="SelectionController" to="." method="_on_selection_changed"]
 [connection signal="map_mode_selected" from="MapModes" to="." method="_on_map_modes_map_mode_selected"]
+[connection signal="selection_changed" from="SelectionController" to="." method="_on_selection_changed"]

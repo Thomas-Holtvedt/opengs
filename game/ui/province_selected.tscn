@@ -46,14 +46,14 @@ layout_mode = 2
 layout_mode = 2
 text = "Owner"
 
-[node name="LabelOwner" type="Label" parent="PanelContainer/GridContainer" unique_id=1092114094]
+[node name="LabelOwner" type="RichTextLabel" parent="PanelContainer/GridContainer" unique_id=83578800]
 layout_mode = 2
 
 [node name="Label6" type="Label" parent="PanelContainer/GridContainer" unique_id=1768102181]
 layout_mode = 2
 text = "Controller"
 
-[node name="LabelController" type="Label" parent="PanelContainer/GridContainer" unique_id=2064501455]
+[node name="LabelController" type="RichTextLabel" parent="PanelContainer/GridContainer" unique_id=893209289]
 layout_mode = 2
 
 [node name="Label4" type="Label" parent="PanelContainer/GridContainer" unique_id=1611732156]
